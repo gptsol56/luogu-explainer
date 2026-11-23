@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>洛谷题目自动讲解</title>
+<meta name="description" content="面向自学与教学的洛谷算法题讲解助手: 填题号或粘题面, 模型按固定小节生成讲解。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232F5D50'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23ffffff' font-family='sans-serif'>洛</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <span class="brand-mark">洛</span>
+    <div class="brand-text">
+      <h1>洛谷题目自动讲解</h1>
+      <p>面向自学与教学的算法题讲解助手</p>
+    </div>
+  </div>
+  <div class="header-meta" id="header-meta">正在检测运行模式……</div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="功能切换">
+  <button class="tab is-active" type="button" role="tab" data-panel="panel-explain" aria-selected="true">① 题目讲解</button>
+  <button class="tab" type="button" role="tab" data-panel="panel-punch" aria-selected="false">② 每日打卡</button>
+  <button class="tab" type="button" role="tab" data-panel="panel-about" aria-selected="false">③ 使用说明</button>
+</nav>
+
+<main>
+
+  <!-- ① 题目讲解 -->
+  <section class="panel is-active" id="panel-explain" role="tabpanel">
+    <div class="card">
+      <h2 class="card-title">挑一道题</h2>
+
+      <label class="field-label" for="pid-input">题号</label>
+      <input class="input" id="pid-input" type="text" inputmode="text"
+             placeholder="例如 P1001" autocomplete="off" spellcheck="false">
+
+      <div class="divider"><span>或者</span></div>
+
+      <label class="field-label" for="text-input">粘贴题面</label>
+      <textarea class="input textarea" id="text-input" rows="8"
+                placeholder="把题面直接粘进来, 模型会按固定小节讲这道题"></textarea>
+
+      <div class="form-row">
+        <div class="form-row-item">
+          <label class="field-label" for="style-select">讲解风格</label>
+          <select class="input select" id="style-select">
+            <option value="面向初学者">面向初学者</option>
+            <option value="冲刺提分">冲刺提分</option>
+          </select>
+        </div>
+        <div class="form-row-item form-row-action">
+          <button class="btn btn-primary" id="explain-btn" type="button">生成讲解</button>
+          <button class="btn" id="demo-btn" type="button">看演示样例</button>
+        </div>
+      </div>
+
+      <div class="key-panel" id="key-panel" hidden>
+        <h3 class="key-title">自带密钥模式 (BYOK)</h3>
+        <p class="hint">
+          本站部署在 GitHub Pages 上, 没有后端代理, 所以需要你自己的模型密钥。
+          密钥只保存在这台电脑的浏览器 localStorage 里, 不会上传到任何服务器, 也不进入本仓库。
+        </p>
+        <label class="field-label" for="key-input">API Key</label>
+        <input class="input" id="key-input" type="password" autocomplete="off"
+               placeholder="粘贴你的 MiniMax API Key">
+        <div class="form-row">
+          <div class="form-row-item">
+            <label class="field-label" for="base-input">接口地址</label>
+            <input class="input" id="base-input" type="text" autocomplete="off"
+                   value="https://api.minimaxi.com/anthropic">
+          </div>
+          <div class="form-row-item">
+            <label class="field-label" for="model-input">模型</label>
+            <input class="input" id="model-input" type="text" autocomplete="off"
+                   value="MiniMax-M3.1-Flash">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-row-item form-row-action">
+            <button class="btn" id="save-key-btn" type="button">保存到本机</button>
+            <button class="btn" id="clear-key-btn" type="button">清除</button>
+          </div>
+        </div>
+        <p class="hint" id="key-state">未保存密钥</p>
+      </div>
+
+      <p class="hint" id="input-hint">
+        题号与题面二选一。填题号需要洛谷登录态, 没有登录态时直接改用「粘贴题面」即可。
+      </p>
+      <div class="notice notice-error" id="explain-error" hidden></div>
+    </div>
+
+    <div class="card" id="explain-result" hidden>
+      <div class="result-head">
+        <h2 class="card-title" id="result-title">讲解</h2>
+        <div class="actions">
+          <button class="btn" id="copy-btn" type="button">复制 Markdown</button>
+          <button class="btn" id="download-btn" type="button">下载 .md</button>
+        </div>
+      </div>
+      <p class="meta" id="result-meta"></p>
+      <article class="markdown-body" id="result-body"></article>
+    </div>
+  </section>
+
+  <!-- ② 每日打卡 -->
+  <section class="panel" id="panel-punch" role="tabpanel">
+    <div class="card">
+      <h2 class="card-title">洛谷每日打卡</h2>
+      <div class="notice notice-info">
+        洛谷的登录态 Cookie 不能放在浏览器里 —— 浏览器直连洛谷接口拿不到跨域许可, 也没有 CORS 响应头,
+        所以打卡是命令行工具的活儿, 不是一个网页按钮。
+      </div>
+      <div class="status-grid" id="punch-status">
+        <div class="status-item"><span class="status-label">服务状态</span><span class="status-value" id="status-service">读取中</span></div>
+        <div class="status-item"><span class="status-label">打卡凭据</span><span class="status-value" id="status-creds">读取中</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-row-item form-row-action">
+          <button class="btn btn-primary" id="punch-btn" type="button">立即打卡</button>
+        </div>
+      </div>
+      <div class="notice notice-error" id="punch-error" hidden></div>
+      <div class="result-box" id="punch-result" hidden>
+        <div class="result-line"><span class="result-key">状态</span><span class="result-val" id="punch-ok"></span></div>
+        <div class="result-line"><span class="result-key">返回码</span><span class="result-val" id="punch-code"></span></div>
+        <div class="result-line"><span class="result-key">信息</span><span class="result-val" id="punch-message"></span></div>
+        <div class="result-line"><span class="result-key">耗时</span><span class="result-val" id="punch-elapsed"></span></div>
+      </div>
+      <h3 class="sub-title">命令行怎么打</h3>
+      <pre class="cmd"><code>pip install -r requirements.txt
+python luogu_punch.py                 # 打一次
+python luogu_punch.py --json          # JSON 输出
+python luogu_punch.py --schedule      # 常驻, 每天 10:00 (北京时间)
+scripts\install_task.ps1              # 注册成 Windows 计划任务</code></pre>
+      <p class="hint">
+        凭据只从环境变量读: <code>LUOGU_CLIENT_ID</code> 与 <code>LUOGU_UID</code>,
+        仓库里只有空的 <code>.env.example</code> 模板。
+      </p>
+    </div>
+  </section>
+
+  <!-- ③ 使用说明 -->
+  <section class="panel" id="panel-about" role="tabpanel">
+    <div class="card">
+      <h2 class="card-title">这个站点怎么用</h2>
+      <p class="hint">
+        站点有三种运行形态, 页面会自动检测当前是哪种。
+      </p>
+      <div class="mode-grid">
+        <div class="mode-item">
+          <h4 class="mode-name">本机代理模式</h4>
+          <p class="mode-desc">
+            在本机跑 <code>python server/app.py</code>, 密钥只在服务端进程环境里, 浏览器不接触任何凭据。
+            填题号能自动抓洛谷题面, 打卡按钮也可用。
+          </p>
+        </div>
+        <div class="mode-item">
+          <h4 class="mode-name">自带密钥模式 (BYOK)</h4>
+          <p class="mode-desc">
+            GitHub Pages 上没有后端, 所以用你自己带的密钥直连模型接口。
+            密钥只存在本机浏览器 localStorage, 不经过任何服务器。
+          </p>
+        </div>
+        <div class="mode-item">
+          <h4 class="mode-name">演示模式</h4>
+          <p class="mode-desc">
+            提交一份预生成的样例讲解, 让没有密钥的人也能看到完整效果。
+            <strong>注意: 演示样例是预先生成的, 不是实时调用。</strong>
+          </p>
+        </div>
+      </div>
+      <h3 class="sub-title">仓库地址</h3>
+      <p class="hint">
+        站点与打卡工具都在公开仓库 <a href="https://github.com/gptsol56/luogu-explainer" target="_blank" rel="noopener noreferrer">gptsol56/luogu-explainer</a>。
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  松墨绿 · 洛谷题目自动讲解 · 密钥只留在服务端环境变量或你的浏览器 localStorage 里
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
