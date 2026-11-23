@@ -1,0 +1,5 @@
+requests>=2.31.0
+
+# Windows 上 zoneinfo 查 "Asia/Shanghai" 需要 tzdata;
+# 没有它时 luogu_punch.py 会自动回退到固定 UTC+8 (中国自 1991 年起无夏令时, 偏移仍然精确)。
+tzdata; platform_system == "Windows"
