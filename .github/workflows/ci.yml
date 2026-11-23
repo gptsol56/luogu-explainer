@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 自检与单元测试 (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: 打卡工具离线自检 (不联网)
+        run: python luogu_punch.py --selftest
+      - name: 单元测试
+        run: python -m unittest discover -s tests -v
+      - name: 讲解模块离线自检
+        run: python explainer/luogu_explainer.py --selftest
+      - name: 站点构建脚本离线自检
+        run: python tools/build_site.py --selftest
+
+  web-smoke:
+    name: 网页应用冒烟测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: 起服务并探测接口
+        run: |
+          python server/app.py --host 127.0.0.1 --port 8848 &
+          for i in $(seq 1 20); do
+            sleep 1
+            if curl -sf http://127.0.0.1:8848/api/health > /tmp/health.json; then break; fi
+          done
+          cat /tmp/health.json
+          python tools/check_health.py /tmp/health.json
+          curl -sf http://127.0.0.1:8848/ | head -c 120
+          echo
+          curl -sf http://127.0.0.1:8848/prompt_template.json > /tmp/tpl.json
+          curl -sf http://127.0.0.1:8848/sample-explanation.json > /tmp/sample.json
+          python tools/check_assets.py /tmp/tpl.json /tmp/sample.json
+          if curl -sf -o /dev/null http://127.0.0.1:8848/api/notes; then
+            echo 'notes 接口不该存在'
+            exit 1
+          fi
+          echo 'notes 接口已移除 (符合预期)'
+
+  static-site:
+    name: 静态站点产物校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 组装静态站点
+        run: python tools/build_site.py --out _site
+      - name: 产物必须齐全且无密钥
+        run: |
+          test -f _site/index.html
+          test -f _site/app.js
+          test -f _site/style.css
+          test -f _site/sample-explanation.json
+          test -f _site/prompt_template.json
+          if grep -rIl -e 'MINIMAX_API_KEY=' -e 'LUOGU_CLIENT_ID=' -e '__client_id=' _site; then
+            echo '产物里出现凭据字面量'
+            exit 1
+          fi
+          echo '静态产物校验通过'

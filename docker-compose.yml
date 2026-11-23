@@ -1,0 +1,10 @@
+# 需要先按 .env.example 建一个 .env (填 MINIMAX_API_KEY 等), 再 docker compose up -d
+services:
+  luogubot:
+    build: .
+    container_name: luogubot
+    ports:
+      - "8848:8848"
+    env_file:
+      - .env
+    restart: unless-stopped
