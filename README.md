@@ -30,6 +30,39 @@ python server/app.py
 
 想先看效果不配密钥，就翻页面下面的「示例题」。那几道题的解析是真调用模型生成后存下来的。
 
+## 一键启动（CMD）
+
+仓库根目录有个 `一键启动.cmd`，双击就行。它在命令行窗口里做四件事：找 Python、载入 `.env`、起本地服务、自动打开浏览器。
+
+```
+luogu-explainer/
+└── 一键启动.cmd          双击这个
+```
+
+用法：
+
+- 双击 `一键启动.cmd` —— 默认 `127.0.0.1:8848`
+- `一键启动.cmd 9000` —— 换端口
+- `一键启动.cmd 8848 --no-browser` —— 不自动开浏览器（调试用）
+
+会开两个窗口：「洛谷讲解助手 · 服务」那个是服务本体，日志和报错都在里面，**关掉它就等于停服务**；另一个是启动器自己，最后停在那儿等你按一下键。
+
+`.env` 有就载，没有也照跑。区别在这儿：载了 `.env`，本机代理模式直接就有密钥，能自动取题面、真的调模型、跑打卡；没载的话，页面会让你在浏览器里自己填密钥，那就是自带密钥模式。
+
+`.env` 照着 `.env.example` 建，一行一个 `KEY=value`，等号两边别加空格。
+
+它做的事写成命令大概是这样：
+
+```bat
+cd /d "%~dp0"
+where py >nul 2>nul && set "PY=py -3"
+for /f "usebackq eol=# tokens=1,* delims==" %%A in (".env") do set "%%A=%%B"
+start "洛谷讲解助手 · 服务" cmd /k %PY% server\app.py --host 127.0.0.1 --port 8848
+start "" "http://127.0.0.1:8848/"
+```
+
+端口已经被占着的时候，它不重复起服务，直接把浏览器打开 —— 免得两个实例抢同一个端口。
+
 ## 自检
 
 每个脚本都带 `--selftest`，不用凭据、不联网：
@@ -41,6 +74,7 @@ python server/app.py
 | `python explainer/luogu_explainer.py --selftest` | 39 | 提示词模板、模型预设表、两种接口形状的请求与解析 |
 | `python tools/build_site.py --selftest` | 10 | 静态产物组装：文件齐不齐、模板能不能解析、示例题库完整不完整、有没有密钥字面量 |
 | `python tools/build_samples.py --selftest` | 8 | 示例题库：缺解析会不会补、已有解析会不会被覆盖、清单能不能重建 |
+| `python tools/gen_tree.py --selftest` | 14 | 目录生成器：树排得对不对、README 里的目录块能不能替换、过期了能不能查出来 |
 | `python tools/check_notes_sync.py --selftest` | 5 | 笔记同步比对器：正文、图片、文件名任何一个字节不一样都要抓出来 |
 
 这些命令存在是有原因的。工具坏掉的时候，你得能分清是环境问题还是代码问题 —— 靠肉眼看输出不行。
@@ -252,28 +286,122 @@ docker compose up -d
 
 ## 目录
 
+仓库里有什么、每个文件干什么。下面这块是自动生成的 —— 加了或改了文件，跑一次 `python tools/gen_tree.py --write` 刷新，CI 会检查它有没有过期。
+
+<!-- tree:start -->
+
 ```
 luogu-explainer/
-├── luogu_punch.py            每日打卡（单文件，自带 --selftest）
-├── explainer/
-│   ├── luogu_explainer.py    取题 / 提示词 / 调模型
-│   ├── prompt_template.json  提示词唯一真源（后端与前端共用）
-│   ├── providers.json        模型厂商预设表（同样是真源）
-│   └── samples/              示例题解析库（题面 + 预生成的解析）
-├── server/app.py             API 代理层 + 静态站点（只用标准库）
-├── web/                      前端单页，无构建步骤，不引 CDN
-├── notes/                    学习笔记正文（六章）+ 内嵌图
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml   # CI 门禁, 五个作业
+│   │   └── pages.yml   # Pages 发布
+│   └── PULL_REQUEST_TEMPLATE.md   # PR 模板
 ├── docs/
-│   ├── draft/                笔记 DOCX 原稿
-│   ├── source-materials/     第一至第四天的原始素材
-│   └── images/               界面截图
-├── tests/                    打卡工具的单元测试
-├── tools/                    站点构建、笔记转换、示例题库、CI 校验脚本
-├── scripts/                  计划任务安装 / 手动触发 / 启服务
-├── .github/workflows/        CI 门禁与 Pages 部署
-├── CONTRIBUTING.md           分支模型、提交规范、硬规矩
-└── requirements.txt
+│   ├── draft/
+│   │   └── 淳阳项目组学习笔记_第一阶段_GIT_AND_AGENT.docx   # 笔记原稿, 唯一真源
+│   ├── images/
+│   │   ├── sample-library.png   # 示例题区块截图
+│   │   └── web-ui.png   # 界面截图
+│   ├── source-materials/
+│   │   ├── AI Agent 学习计划.md   # 第一天学习计划
+│   │   ├── ecc_dashboard_shot.png   # ECC 面板截图
+│   │   ├── gh-candidate-audit.json   # 技能候选审计
+│   │   ├── gh-picked-audit.json   # 技能挑选审计
+│   │   ├── Git学习笔记-第一天.docx   # 第一天原始笔记
+│   │   ├── Git学习笔记-第三天.docx   # 第三天原始笔记
+│   │   ├── Git学习笔记-第二天.docx   # 第二天原始笔记
+│   │   ├── Git学习笔记-第四天.docx   # 第四天原始笔记
+│   │   ├── 前置学习任务.md   # 前置任务书
+│   │   ├── 前置学习指南.docx   # 前置学习指南
+│   │   ├── 新建 文本文档.txt   # 终端原始记录
+│   │   ├── 笔记改造预览.png   # 笔记改造预览
+│   │   ├── 笔记第三章_我的想法_预览.png   # 第三章预览
+│   │   └── 笔记第三章_提交日记_预览.png   # 第三章预览
+│   ├── github-skill-stars.md   # 技能星标清单, 附带资料
+│   └── SKILLS-INDEX.md   # 技能索引, 附带资料
+├── explainer/
+│   ├── samples/
+│   │   ├── index.json   # 示例题清单
+│   │   ├── P1001.json   # 示例题 A+B, 题面加解析
+│   │   ├── P1090.json   # 示例题 合并果子, 题面加解析
+│   │   └── P1421.json   # 示例题 小玉买文具, 题面加解析
+│   ├── __init__.py   # 包声明
+│   ├── luogu_explainer.py   # 取题 / 提示词 / 调模型, 自带 --selftest
+│   ├── prompt_template.json   # 提示词唯一真源
+│   └── providers.json   # 模型厂商预设表, 真源
+├── notes/
+│   ├── images/
+│   │   ├── pic1.png   # 笔记内嵌图
+│   │   ├── pic2.png   # 笔记内嵌图
+│   │   └── pic3.png   # 笔记内嵌图
+│   ├── 01-Git-学习记录.md   # 第一章
+│   ├── 02-AI-Agent-学习记录.md   # 第二章
+│   ├── 03-提交日记-洛谷打卡助手.md   # 第三章
+│   ├── 04-把仓库做成一个完整的整体.md   # 第四章
+│   ├── 05-拆仓库-公开的站点与私有的笔记.md   # 第五章
+│   └── 06-示例题解析库.md   # 第六章
+├── scripts/
+│   ├── install_task.ps1   # 注册 Windows 计划任务
+│   ├── punch.cmd   # 一键跑一次打卡
+│   └── serve.cmd   # 一键起站点
+├── server/
+│   └── app.py   # API 代理层加静态站点, 只用标准库
+├── tests/
+│   └── test_luogu_punch.py   # 打卡工具单元测试
+├── tools/
+│   ├── agents/
+│   │   ├── kit_demo.py   # Agent 工具包示例
+│   │   ├── minimal_mcp_server.py   # 最小 MCP 服务端
+│   │   ├── regex_basics.py   # 正则基础
+│   │   ├── regex_engines.py   # 正则引擎对比
+│   │   ├── run_demo.cmd   # 示例的 CMD 入口
+│   │   ├── schema_lab.py   # 结构化输出实验
+│   │   ├── tokenization_demo.py   # 分词实验
+│   │   └── tool_contract.py   # 工具契约实验
+│   ├── agent_loop.py   # Agent 主循环示例
+│   ├── bpe_encode_demo.py   # 分词编码演示
+│   ├── build_samples.py   # 解析库生成与维护, 自带 --selftest
+│   ├── build_site.py   # 静态站点组装, 自带 --selftest
+│   ├── check_assets.py   # 模板与题库结构校验
+│   ├── check_health.py   # 健康检查返回值校验
+│   ├── check_notes.py   # 转换结果零丢失核对
+│   ├── check_notes_sync.py   # notes 与原稿同步校验
+│   ├── cost_manager.py   # 成本统计
+│   ├── demo_agent_loop.py   # 主循环演示
+│   ├── demo_cost.py   # 成本演示
+│   ├── docx_to_md.py   # DOCX 转 Markdown
+│   ├── gen_tree.py   # 生成并校验 README 的文件树
+│   ├── gh_skill_install.py   # 从 GitHub 装技能
+│   ├── github_skill_scan.py   # 扫描 GitHub 技能
+│   ├── tidy_skills.py   # 整理技能目录
+│   └── verify_skills.py   # 技能校验
+├── web/
+│   ├── app.js   # 前端逻辑
+│   ├── index.html   # 页面骨架
+│   └── style.css   # 样式
+├── .editorconfig   # 行尾与缩进规范
+├── .env.example   # 空凭据模板, 照它建 .env
+├── .gitignore   # 忽略规则
+├── CONTRIBUTING.md   # 分支模型与提交规范
+├── docker-compose.yml   # 容器编排
+├── Dockerfile   # 容器镜像
+├── LICENSE   # 许可证
+├── luogu_punch.py   # 打卡 CLI, 单文件, 自带 --selftest
+├── README.md   # 主文档
+├── requirements.txt   # Python 依赖
+└── 一键启动.cmd   # 双击起本地站点并自动开浏览器
 ```
+
+<!-- tree:end -->
+
+几层东西分开看：
+
+- `web/` + `server/` 是站点本体。`web/` 是前端三件套，没有构建步骤；`server/app.py` 是本机代理层，只用标准库。
+- `explainer/` 是数据真源：提示词、厂商预设表、示例题库都在这儿，后端和浏览器读的是同一份。
+- `notes/` 是笔记正文，但它是**转换产物** —— 真源是 `docs/draft/` 里的 DOCX，改正文要改 DOCX 再重新转。
+- `tools/` 是干活用的脚本：组装站点、生成题库、转笔记、校验，每个都能 `--selftest`。
+- `scripts/` 和根目录的 `一键启动.cmd` 是入口，一个一个对着看就明白谁干什么。
 
 ## 提交代码
 
