@@ -30,6 +30,19 @@ DOCX_DIR = REPO / "docs" / "draft"
 CONVERTER = REPO / "tools" / "docx_to_md.py"
 
 
+def same_text(a: Path, b: Path) -> bool:
+    """比对两个文本文件, 行尾归一化后再比。
+
+    为什么必须归一化: Windows 上 core.autocrlf=true, 仓库里的 LF 文件检出到工作区会变成
+    CRLF, 而仓库 blob 与转换器输出都是 LF。直接比字节, 在 Windows 上永远不相等 ——
+    但内容其实一模一样。实测: blob 8215 字节 / 工作区 8412 字节 / 转换输出 8215 字节。
+    归一化后三者完全一致, 所以这里比归一化后的文本。
+    """
+    ta = a.read_text(encoding="utf-8").replace("\r\n", "\n")
+    tb = b.read_text(encoding="utf-8").replace("\r\n", "\n")
+    return ta == tb
+
+
 def compare_dirs(generated: Path, committed: Path) -> List[str]:
     """比对两个目录里的 Markdown 与图片, 返回问题清单。"""
     problems: List[str] = []
@@ -41,7 +54,7 @@ def compare_dirs(generated: Path, committed: Path) -> List[str]:
     for name in sorted(com_md - gen_md):
         problems.append("仓库里多了转换结果里没有的文件: " + name)
     for name in sorted(gen_md & com_md):
-        if not filecmp.cmp(generated / name, committed / name, shallow=False):
+        if not same_text(generated / name, committed / name):
             problems.append("内容与转换结果不一致: " + name)
 
     gen_img = generated / "images"
@@ -147,7 +160,7 @@ def main(argv=None) -> int:
             for item in problems:
                 print("  - " + item, file=sys.stderr)
             return 1
-        print("[OK] notes/ 与 DOCX 原稿逐字节一致, 重新转换不会产生任何差异")
+        print("[OK] notes/ 与 DOCX 原稿一致 (行尾归一化后逐字节相同), 重新转换不会产生任何差异")
         return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
