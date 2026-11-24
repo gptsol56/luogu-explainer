@@ -1,0 +1,94 @@
+{
+  "version": "1.0.0",
+  "default_provider": "minimax",
+  "protocols": {
+    "anthropic": {
+      "label": "Anthropic 风格",
+      "path": "/v1/messages",
+      "auth": "x-api-key",
+      "extra_headers": {
+        "anthropic-version": "2023-06-01"
+      }
+    },
+    "openai": {
+      "label": "OpenAI 风格",
+      "path": "/chat/completions",
+      "auth": "bearer",
+      "extra_headers": {}
+    }
+  },
+  "providers": [
+    {
+      "id": "minimax",
+      "label": "MiniMax",
+      "protocol": "anthropic",
+      "base_url": "https://api.minimaxi.com/anthropic",
+      "model": "MiniMax-M3.1-Flash",
+      "key_env": "MINIMAX_API_KEY",
+      "base_url_env": "MINIMAX_BASE_URL",
+      "model_env": "MINIMAX_MODEL",
+      "browser_direct": true,
+      "note": "本站默认。M3.1-Flash 出字快, 讲入门题够用。"
+    },
+    {
+      "id": "deepseek",
+      "label": "DeepSeek 深度求索",
+      "protocol": "openai",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-chat",
+      "key_env": "DEEPSEEK_API_KEY",
+      "base_url_env": "DEEPSEEK_BASE_URL",
+      "model_env": "DEEPSEEK_MODEL",
+      "browser_direct": true,
+      "note": "deepseek-chat 会自动指向当前稳定版, 不用追具体版本号。"
+    },
+    {
+      "id": "moonshot",
+      "label": "Kimi 月之暗面",
+      "protocol": "openai",
+      "base_url": "https://api.moonshot.cn/v1",
+      "model": "kimi-latest",
+      "key_env": "MOONSHOT_API_KEY",
+      "base_url_env": "MOONSHOT_BASE_URL",
+      "model_env": "MOONSHOT_MODEL",
+      "browser_direct": false,
+      "note": "kimi-latest 指向最新版。长题面读得比同价位稳。"
+    },
+    {
+      "id": "dashscope",
+      "label": "通义千问 百炼",
+      "protocol": "openai",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "model": "qwen-plus",
+      "key_env": "DASHSCOPE_API_KEY",
+      "base_url_env": "DASHSCOPE_BASE_URL",
+      "model_env": "DASHSCOPE_MODEL",
+      "browser_direct": true,
+      "note": "百炼的 OpenAI 兼容层, 国内网络直连最省事。"
+    },
+    {
+      "id": "zhipu",
+      "label": "智谱 GLM",
+      "protocol": "openai",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-4-plus",
+      "key_env": "ZHIPUAI_API_KEY",
+      "base_url_env": "ZHIPUAI_BASE_URL",
+      "model_env": "ZHIPUAI_MODEL",
+      "browser_direct": false,
+      "note": "glm-4-plus 是长期别名, 指向当前主力版本。"
+    },
+    {
+      "id": "custom",
+      "label": "自定义端点",
+      "protocol": "openai",
+      "base_url": "",
+      "model": "",
+      "key_env": "LLM_API_KEY",
+      "base_url_env": "LLM_BASE_URL",
+      "model_env": "LLM_MODEL",
+      "browser_direct": null,
+      "note": "本机自建 (Ollama / vLLM) 或第三方中转, 地址与模型名手填。"
+    }
+  ]
+}

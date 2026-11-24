@@ -7,8 +7,9 @@ server/app.py - 洛谷讲解助手的本地 API + 静态站点服务
 
 接口:
     GET  /api/health            健康检查 (只暴露"有没有密钥", 绝不返回密钥本身)
+    GET  /api/providers         模型厂商预设表 (与 explainer 读的是同一份文件)
     GET  /api/problem/{pid}      抓洛谷题目
-    POST /api/explain            讲解 (pid 或 text)
+    POST /api/explain            讲解 (pid 或 text, 可带 provider)
     POST /api/punch              调仓库根的 luogu_punch 打一次卡
     GET  /prompt_template.json   提示词模板 (与 explainer 读的是同一份文件)
     GET  /...                    web/ 下的静态文件 (挡住路径穿越)
@@ -33,7 +34,7 @@ from urllib.parse import unquote, urlparse
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = REPO_ROOT / "web"
 PROMPT_TEMPLATE_PATH = REPO_ROOT / "explainer" / "prompt_template.json"
-VERSION = "1.0.0"
+VERSION = "1.2.0"
 MAX_BODY_BYTES = 2 * 1024 * 1024
 
 CONTENT_TYPES = {
@@ -136,6 +137,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._handle_problem(path[len("/api/problem/"):])
             if path == "/prompt_template.json":
                 return self._serve_prompt_template()
+            if path == "/api/providers":
+                return self._serve_providers()
             if path.startswith("/api/"):
                 return self._send_error_json("未知接口: " + path, status=404)
             return self._serve_static(path)
@@ -169,7 +172,44 @@ class Handler(BaseHTTPRequestHandler):
             "has_key": bool(snapshot.get("has_key")),
             "punch_ready": punch_ready,
             "version": VERSION,
+            "provider": snapshot.get("provider"),
+            "providers": self._provider_summaries(),
         })
+
+    def _provider_summaries(self) -> list[dict[str, Any]]:
+        """列出各厂商能不能用。只暴露"配没配密钥", 绝不暴露密钥本身。"""
+        rows: list[dict[str, Any]] = []
+        try:
+            table = explainer.load_providers()
+        except explainer.ExplainerError:
+            return rows
+        for spec in table.get("providers") or []:
+            if not isinstance(spec, dict):
+                continue
+            snap = explainer.config_snapshot(str(spec.get("id") or ""))
+            rows.append({
+                "id": str(spec.get("id") or ""),
+                "label": str(spec.get("label") or ""),
+                "protocol": str(spec.get("protocol") or ""),
+                "base_host": urlparse(str(snap.get("base_url") or "")).netloc,
+                "model": str(snap.get("model") or ""),
+                "has_key": bool(snap.get("has_key")),
+                "browser_direct": spec.get("browser_direct"),
+            })
+        return rows
+
+    def _serve_providers(self) -> None:
+        """把模型预设表发给前端。静态站那边读的是同一个文件, 两端不会漂。"""
+        try:
+            body = explainer.PROVIDERS_PATH.read_bytes()
+        except OSError:
+            return self._send_error_json("模型预设表不存在", status=404)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
 
     def _handle_problem(self, raw_pid: str) -> None:
         pid = unquote(raw_pid).strip()
@@ -198,11 +238,12 @@ class Handler(BaseHTTPRequestHandler):
         pid = str(body.get("pid") or "").strip()
         text = str(body.get("text") or "").strip()
         style = str(body.get("style") or "面向初学者").strip() or "面向初学者"
+        provider = str(body.get("provider") or "").strip()
         target = pid or text
         if not target:
             return self._send_error_json("请填写题号 (pid) 或粘贴题面 (text)")
         try:
-            result = explainer.explain(target, style=style)
+            result = explainer.explain(target, style=style, provider=provider or None)
         except explainer.ExplainerError as exc:
             return self._send_error_json(str(exc))
         except Exception as exc:  # noqa: BLE001
@@ -215,6 +256,8 @@ class Handler(BaseHTTPRequestHandler):
             "usage": result.get("usage") or {},
             "elapsed_ms": result.get("elapsed_ms"),
             "source": result.get("source"),
+            "provider": result.get("provider"),
+            "model": result.get("model"),
         })
 
     def _handle_punch(self) -> None:
