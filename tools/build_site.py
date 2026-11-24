@@ -29,6 +29,7 @@ from typing import Any, Callable, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = REPO_ROOT / "web"
 TEMPLATE_PATH = REPO_ROOT / "explainer" / "prompt_template.json"
+PROVIDERS_PATH = REPO_ROOT / "explainer" / "providers.json"
 
 # 发布产物里必须存在的文件
 REQUIRED_FILES = (
@@ -37,6 +38,7 @@ REQUIRED_FILES = (
     "style.css",
     "sample-explanation.json",
     "prompt_template.json",
+    "providers.json",
 )
 
 # 静态产物里绝对不该出现的东西 (密钥 / 真实 cookie / 私有域名)
@@ -116,12 +118,49 @@ def check_template(out_dir: Path) -> list[str]:
     return problems
 
 
+def check_providers(out_dir: Path) -> list[str]:
+    """校验产物里的模型预设表能被解析, 且每条预设都指向已知协议。"""
+    problems: list[str] = []
+    target = out_dir / "providers.json"
+    if not target.is_file():
+        return ["providers.json 不存在"]
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        return ["providers.json 不是合法 JSON: " + str(exc)]
+    if not isinstance(data, dict):
+        return ["providers.json 不是对象"]
+    protocols = data.get("protocols")
+    providers = data.get("providers")
+    if not isinstance(protocols, dict) or not protocols:
+        problems.append("protocols 缺失或为空")
+    if not isinstance(providers, list) or not providers:
+        problems.append("providers 缺失或为空")
+        return problems
+    for spec in providers:
+        if not isinstance(spec, dict):
+            problems.append("有一条预设不是对象")
+            continue
+        for field in ("id", "label", "protocol"):
+            if not spec.get(field):
+                problems.append("预设缺少字段 " + field)
+        if isinstance(protocols, dict) and spec.get("protocol") not in protocols:
+            problems.append("预设引用了未知协议 " + str(spec.get("protocol")))
+    default = str(data.get("default_provider") or "")
+    ids = [str(s.get("id")) for s in providers if isinstance(s, dict)]
+    if default and default not in ids:
+        problems.append("默认厂商不在列表里: " + default)
+    return problems
+
+
 def build(out_dir: Path) -> dict[str, Any]:
     """把 web/ 与提示词模板组装到 out_dir, 并做三项校验。"""
     if not WEB_DIR.is_dir():
         raise BuildError("找不到前端目录: " + str(WEB_DIR))
     if not TEMPLATE_PATH.is_file():
         raise BuildError("找不到提示词模板: " + str(TEMPLATE_PATH))
+    if not PROVIDERS_PATH.is_file():
+        raise BuildError("找不到模型预设表: " + str(PROVIDERS_PATH))
 
     out_dir = out_dir.resolve()
     staging = out_dir.parent / (out_dir.name + ".building")
@@ -138,6 +177,7 @@ def build(out_dir: Path) -> dict[str, Any]:
             else:
                 shutil.copy2(item, staging / item.name)
         shutil.copy2(TEMPLATE_PATH, staging / "prompt_template.json")
+        shutil.copy2(PROVIDERS_PATH, staging / "providers.json")
 
         missing = check_required(staging)
         if missing:
@@ -149,6 +189,9 @@ def build(out_dir: Path) -> dict[str, Any]:
         problems = check_template(staging)
         if problems:
             raise BuildError("产物里的提示词模板有问题: " + "; ".join(problems))
+        provider_problems = check_providers(staging)
+        if provider_problems:
+            raise BuildError("产物里的模型预设表有问题: " + "; ".join(provider_problems))
 
         if out_dir.exists():
             shutil.rmtree(out_dir)
@@ -211,6 +254,24 @@ def _selftest() -> int:
             hits = check_secrets(out)
             hits = [h for h in hits if not any(a in h for a in ALLOWED_SNIPPETS)]
             assert not hits, hits
+
+    @case("产物里的模型预设表可解析且预设齐全")
+    def _() -> None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "site"
+            build(out)
+            problems = check_providers(out)
+            assert not problems, problems
+
+    @case("模型预设表检查能报出缺失")
+    def _() -> None:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "site"
+            out.mkdir()
+            problems = check_providers(out)
+            assert problems, problems
 
     @case("必需文件检查能报出缺失")
     def _() -> None:

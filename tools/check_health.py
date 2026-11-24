@@ -41,10 +41,21 @@ def check(payload_text: str) -> list[str]:
         problems.append("ok 字段不为 True: " + repr(data.get("ok")))
 
     # 顶层字段白名单: 多了就是泄漏
-    allowed = {"ok", "model", "base_host", "has_key", "punch_ready", "version"}
+    allowed = {"ok", "model", "base_host", "has_key", "punch_ready", "version",
+               "provider", "providers"}
     for key in data:
         if key not in allowed:
             problems.append("health 响应出现未预期字段: " + str(key))
+
+    # providers 是各厂商的可用状态, 只允许出现 id / label / 协议 / 有没有密钥
+    providers = data.get("providers")
+    if providers is not None:
+        if not isinstance(providers, list) or not providers:
+            problems.append("providers 应是非空数组")
+        else:
+            for row in providers:
+                if not isinstance(row, dict) or not row.get("id"):
+                    problems.append("providers 里有一条缺 id")
 
     # 嵌套检查: 任何层级都不许出现敏感字段名
     def walk(node, path):

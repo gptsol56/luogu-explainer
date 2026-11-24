@@ -4,7 +4,9 @@ luogu_explainer.py - 洛谷题目自动讲解核心库
 
 用途:
   1. 抓取洛谷题目 (题号 -> 题面纯文本), 也支持直接粘贴题面;
-  2. 调用 MiniMax (Anthropic 兼容端点) 生成面向自学/教学的讲解 Markdown;
+  2. 调用大模型生成面向自学/教学的讲解 Markdown。接口形状有两种: Anthropic 风格
+     (POST {base}/v1/messages) 与 OpenAI 风格 (POST {base}/chat/completions),
+     可选厂商见 explainer/providers.json;
   3. 自带 --selftest, 完全离线 (不联网、不读注册表密钥、不需要洛谷账号)。
 
 设计原则 (与仓库根的 luogu_punch.py 保持一致):
@@ -18,12 +20,17 @@ luogu_explainer.py - 洛谷题目自动讲解核心库
     python explainer/luogu_explainer.py --file 题面.txt --out 讲解.md
     python explainer/luogu_explainer.py --selftest
 
-凭据 (环境变量):
-    MINIMAX_API_KEY    必填, MiniMax 平台密钥
-    MINIMAX_BASE_URL   可选, 默认 https://api.minimaxi.com/anthropic
-    MINIMAX_MODEL      可选, 默认 MiniMax-M3.1-Flash
-    LUOGU_CLIENT_ID    抓题用, 对应洛谷 Cookie 的 __client_id
-    LUOGU_UID          抓题用, 对应洛谷 Cookie 的 _uid
+凭据 (环境变量, 每个厂商一套, 见 explainer/providers.json):
+    MINIMAX_API_KEY      MiniMax 平台密钥
+    MINIMAX_BASE_URL     可选, 默认 https://api.minimaxi.com/anthropic
+    MINIMAX_MODEL        可选, 默认 MiniMax-M3.1-Flash
+    DEEPSEEK_API_KEY     DeepSeek (另有 DEEPSEEK_BASE_URL / DEEPSEEK_MODEL)
+    MOONSHOT_API_KEY     Kimi (另有 MOONSHOT_BASE_URL / MOONSHOT_MODEL)
+    DASHSCOPE_API_KEY    百炼 (另有 DASHSCOPE_BASE_URL / DASHSCOPE_MODEL)
+    ZHIPUAI_API_KEY      智谱 (另有 ZHIPUAI_BASE_URL / ZHIPUAI_MODEL)
+    LLM_API_KEY          自定义端点 (另有 LLM_BASE_URL / LLM_MODEL)
+    LUOGU_CLIENT_ID      抓题用, 对应洛谷 Cookie 的 __client_id
+    LUOGU_UID            抓题用, 对应洛谷 Cookie 的 _uid
 """
 
 from __future__ import annotations
@@ -54,6 +61,12 @@ DEFAULT_BASE_URL = "https://api.minimaxi.com/anthropic"
 DEFAULT_MODEL = "MiniMax-M3.1-Flash"
 DEFAULT_MAX_TOKENS = 4096
 ANTHROPIC_VERSION = "2023-06-01"
+
+# 模型厂商预设表: 唯一真源是 explainer/providers.json。后端与浏览器端读的是同一份
+# 文件, 所以"页面上能选哪些模型"和"服务端认识哪些模型"不会各说各话。
+PROVIDERS_PATH = Path(__file__).resolve().parent / "providers.json"
+PROTOCOL_ANTHROPIC = "anthropic"
+PROTOCOL_OPENAI = "openai"
 
 # Markdown 代码块围栏, 用转义写法避免源码里出现反引号
 FENCE = "\u0060" * 3
@@ -99,6 +112,52 @@ def load_prompt_template() -> dict[str, Any]:
 
 # 讲解固定小节 (模板与自检共用同一份定义, 避免两处漂移)
 REQUIRED_SECTIONS = tuple(load_prompt_template()["required_sections"])
+
+
+def load_providers() -> dict[str, Any]:
+    """读取模型厂商预设表。缺失或字段不对时直接报错, 不做静默兜底。"""
+    try:
+        with open(PROVIDERS_PATH, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except OSError as exc:
+        raise ExplainerError(
+            "模型预设表读取失败: " + str(PROVIDERS_PATH) + " (" + type(exc).__name__ + ")"
+        ) from exc
+    except ValueError as exc:
+        raise ExplainerError("模型预设表不是合法 JSON: " + str(PROVIDERS_PATH)) from exc
+    if not isinstance(data, dict):
+        raise ExplainerError("模型预设表必须是 JSON 对象")
+    protocols = data.get("protocols")
+    providers = data.get("providers")
+    if not isinstance(protocols, dict) or not protocols:
+        raise ExplainerError("模型预设表缺少 protocols")
+    if not isinstance(providers, list) or not providers:
+        raise ExplainerError("模型预设表缺少 providers")
+    ids: list[str] = []
+    for spec in providers:
+        if not isinstance(spec, dict):
+            raise ExplainerError("模型预设表里有一条不是对象")
+        for field in ("id", "label", "protocol"):
+            if not spec.get(field):
+                raise ExplainerError("模型预设缺少字段: " + field)
+        if str(spec["protocol"]) not in protocols:
+            raise ExplainerError("模型预设引用了未知协议: " + str(spec["protocol"]))
+        ids.append(str(spec["id"]))
+    default = str(data.get("default_provider") or "")
+    if default and default not in ids:
+        raise ExplainerError("默认厂商不在 providers 列表里: " + default)
+    return data
+
+
+def find_provider(provider_id: Optional[str] = None) -> dict[str, Any]:
+    """按 id 取厂商预设。找不到就报错, 并把当前可选的 id 列出来。"""
+    table = load_providers()
+    wanted = (provider_id or table.get("default_provider") or "").strip()
+    for spec in table["providers"]:
+        if str(spec.get("id")) == wanted:
+            return spec
+    ids = ", ".join(str(s.get("id")) for s in table["providers"])
+    raise ExplainerError("未知模型厂商: " + (wanted or "(空)") + "。当前可选: " + ids)
 
 
 # --------------------------------------------------------------------------
@@ -220,46 +279,69 @@ def _read_registry_env() -> dict[str, str]:
     return values
 
 
-def resolve_config(use_registry: bool = True) -> dict[str, str]:
-    """解析 MiniMax 配置: 先环境变量, 再 (可选) Windows 注册表回退。缺密钥时报错。"""
-    base_url = (os.environ.get(BASE_URL_ENV) or "").strip()
-    api_key = (os.environ.get(API_KEY_ENV) or "").strip()
-    model = (os.environ.get(MODEL_ENV) or "").strip()
+def resolve_config(provider: Optional[str] = None,
+                   use_registry: bool = True) -> dict[str, str]:
+    """解析某个厂商的调用配置: 先环境变量, 再 (可选) Windows 注册表回退。
+
+    走哪套环境变量由 providers.json 决定 (key_env / base_url_env / model_env),
+    所以加一个新厂商只要在那份 JSON 里加一条, 这个函数不用动。
+    """
+    spec = find_provider(provider)
+    key_env = str(spec.get("key_env") or API_KEY_ENV)
+    base_env = str(spec.get("base_url_env") or BASE_URL_ENV)
+    model_env = str(spec.get("model_env") or MODEL_ENV)
+    base_url = (os.environ.get(base_env) or "").strip()
+    api_key = (os.environ.get(key_env) or "").strip()
+    model = (os.environ.get(model_env) or "").strip()
     if use_registry:
         registry = _read_registry_env()
-        base_url = base_url or registry.get(BASE_URL_ENV, "").strip()
-        api_key = api_key or registry.get(API_KEY_ENV, "").strip()
-        model = model or registry.get(MODEL_ENV, "").strip()
+        base_url = base_url or registry.get(base_env, "").strip()
+        api_key = api_key or registry.get(key_env, "").strip()
+        model = model or registry.get(model_env, "").strip()
     if not api_key:
         raise ExplainerError(
-            "缺少 MiniMax API Key：未找到环境变量 " + API_KEY_ENV + "。\n"
-            "请先设置 (PowerShell): setx " + API_KEY_ENV + " \"<你的密钥>\"\n"
+            "缺少 " + str(spec.get("label") or key_env) + " 的 API Key：未找到环境变量 "
+            + key_env + "。\n"
+            "请先设置 (PowerShell): setx " + key_env + " \"<你的密钥>\"\n"
             "注意 setx 只对之后新开的进程生效, 当前终端请先执行 "
-            "$env:" + API_KEY_ENV + " = \"<你的密钥>\""
+            "$env:" + key_env + " = \"<你的密钥>\""
         )
     return {
-        "base_url": (base_url or DEFAULT_BASE_URL).rstrip("/"),
+        "base_url": (base_url or str(spec.get("base_url") or DEFAULT_BASE_URL)).rstrip("/"),
         "api_key": api_key,
-        "model": model or DEFAULT_MODEL,
+        "model": model or str(spec.get("model") or DEFAULT_MODEL),
+        "protocol": str(spec.get("protocol") or PROTOCOL_ANTHROPIC),
+        "provider": str(spec.get("id") or ""),
+        "key_env": key_env,
     }
 
 
-def config_snapshot(use_registry: bool = True) -> dict[str, Any]:
+def config_snapshot(provider: Optional[str] = None,
+                    use_registry: bool = True) -> dict[str, Any]:
     """给 /api/health 用的非抛出快照: 只暴露"有没有", 绝不把密钥放进响应体。"""
-    base_url = (os.environ.get(BASE_URL_ENV) or "").strip()
-    api_key = (os.environ.get(API_KEY_ENV) or "").strip()
-    model = (os.environ.get(MODEL_ENV) or "").strip()
+    try:
+        spec = find_provider(provider)
+    except ExplainerError:
+        spec = {}
+    key_env = str(spec.get("key_env") or API_KEY_ENV)
+    base_env = str(spec.get("base_url_env") or BASE_URL_ENV)
+    model_env = str(spec.get("model_env") or MODEL_ENV)
+    base_url = (os.environ.get(base_env) or "").strip()
+    api_key = (os.environ.get(key_env) or "").strip()
+    model = (os.environ.get(model_env) or "").strip()
     if use_registry:
         registry = _read_registry_env()
-        base_url = base_url or registry.get(BASE_URL_ENV, "").strip()
-        api_key = api_key or registry.get(API_KEY_ENV, "").strip()
-        model = model or registry.get(MODEL_ENV, "").strip()
-    base_url = (base_url or DEFAULT_BASE_URL).rstrip("/")
+        base_url = base_url or registry.get(base_env, "").strip()
+        api_key = api_key or registry.get(key_env, "").strip()
+        model = model or registry.get(model_env, "").strip()
     return {
-        "base_url": base_url,
+        "base_url": (base_url or str(spec.get("base_url") or DEFAULT_BASE_URL)).rstrip("/"),
         "api_key": api_key,
-        "model": model or DEFAULT_MODEL,
+        "model": model or str(spec.get("model") or DEFAULT_MODEL),
         "has_key": bool(api_key),
+        "protocol": str(spec.get("protocol") or PROTOCOL_ANTHROPIC),
+        "provider": str(spec.get("id") or ""),
+        "key_env": key_env,
     }
 
 
@@ -276,14 +358,34 @@ def load_luogu_cookie() -> str:
 # MiniMax 调用 (Anthropic 兼容端点)
 # --------------------------------------------------------------------------
 
+def _all_key_envs() -> list[str]:
+    """列出所有可能被用到的密钥环境变量名。读不到预设表时退回 MiniMax 那套。"""
+    names = [API_KEY_ENV]
+    try:
+        for spec in load_providers().get("providers") or []:
+            if isinstance(spec, dict) and spec.get("key_env"):
+                names.append(str(spec["key_env"]))
+    except ExplainerError:
+        pass
+    return names
+
+
 def _redact(text: str, secret: str = "") -> str:
-    """把可能出现的密钥从文本里抹掉, 保证异常信息里不泄漏。"""
+    """把可能出现的密钥从文本里抹掉, 保证异常信息里不泄漏。
+
+    抹的不只是当前这一个 —— 任何厂商的密钥环境变量都扫一遍, 因为报错信息里
+    可能带出别处的调试片段。
+    """
     out = str(text)
+    secrets: list[str] = []
     if secret:
-        out = out.replace(secret, "***REDACTED***")
-    from_env = (os.environ.get(API_KEY_ENV) or "").strip()
-    if from_env:
-        out = out.replace(from_env, "***REDACTED***")
+        secrets.append(secret)
+    for name in _all_key_envs():
+        value = (os.environ.get(name) or "").strip()
+        if value:
+            secrets.append(value)
+    for item in secrets:
+        out = out.replace(item, "***REDACTED***")
     return out
 
 
@@ -297,30 +399,57 @@ def _default_transport(url: str, headers: dict[str, str], body: dict[str, Any],
     try:
         resp = requests.post(url, headers=headers, json=body, timeout=timeout)
     except requests.exceptions.Timeout as exc:
-        raise ExplainerError("调用 MiniMax 超时 (" + str(timeout) + "s)") from exc
+        raise ExplainerError("调用模型超时 (" + str(timeout) + "s)") from exc
     except requests.exceptions.RequestException as exc:
-        raise ExplainerError("调用 MiniMax 失败: " + type(exc).__name__ + ": " + str(exc)) from exc
+        raise ExplainerError("调用模型失败: " + type(exc).__name__ + ": " + str(exc)) from exc
     return resp.status_code, resp.text or ""
 
 
-def call_minimax(prompt: str, cfg: dict[str, str], timeout: int = 120,
-                 transport: Optional[Callable[[str, dict[str, str], dict[str, Any], float],
-                                            tuple[int, str]]] = None) -> tuple[str, dict[str, Any]]:
-    """调用 MiniMax 的 Anthropic 兼容接口, 返回 (讲解正文, usage)。"""
+def _endpoint(base_url: str, suffix: str) -> str:
+    """拼接口地址。base_url 已经写了完整路径时不再重复拼。"""
+    base = str(base_url or "").rstrip("/")
+    if not base:
+        raise ExplainerError("接口地址为空")
+    if base.endswith(suffix):
+        return base
+    return base + suffix
+
+
+def call_model(prompt: str, cfg: dict[str, str], timeout: int = 120,
+               transport: Optional[Callable[[str, dict[str, str], dict[str, Any], float],
+                                          tuple[int, str]]] = None) -> tuple[str, dict[str, Any]]:
+    """调用大模型, 返回 (讲解正文, usage)。
+
+    cfg 里的 protocol 决定接口形状:
+      anthropic -> POST {base}/v1/messages, 头 x-api-key + anthropic-version
+      openai    -> POST {base}/chat/completions, 头 Authorization: Bearer
+
+    密钥只放在请求头里, 任何出现在错误信息里的密钥都会被 _redact 抹掉。
+    """
     cfg = cfg or {}
-    base_url = str(cfg.get("base_url") or DEFAULT_BASE_URL).rstrip("/")
+    protocol = str(cfg.get("protocol") or PROTOCOL_ANTHROPIC).strip().lower()
+    base_url = str(cfg.get("base_url") or "").rstrip("/")
     api_key = str(cfg.get("api_key") or "").strip()
     model = str(cfg.get("model") or DEFAULT_MODEL).strip()
+    if protocol not in (PROTOCOL_ANTHROPIC, PROTOCOL_OPENAI):
+        raise ExplainerError("不支持的接口协议: " + protocol)
     if not api_key:
         raise ExplainerError(
-            "缺少 MiniMax API Key：未找到环境变量 " + API_KEY_ENV + "。"
+            "缺少模型 API Key：未找到环境变量 " + str(cfg.get("key_env") or API_KEY_ENV) + "。"
         )
-    url = base_url + "/v1/messages"
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": ANTHROPIC_VERSION,
-        "content-type": "application/json",
-    }
+    if protocol == PROTOCOL_OPENAI:
+        url = _endpoint(base_url, "/chat/completions")
+        headers = {
+            "Authorization": "Bearer " + api_key,
+            "content-type": "application/json",
+        }
+    else:
+        url = _endpoint(base_url, "/v1/messages")
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+            "content-type": "application/json",
+        }
     body = {
         "model": model,
         "max_tokens": int(cfg.get("max_tokens") or DEFAULT_MAX_TOKENS),
@@ -330,29 +459,48 @@ def call_minimax(prompt: str, cfg: dict[str, str], timeout: int = 120,
     status, text = call(url, headers, body, float(timeout))
     if status != 200:
         raise ExplainerError(
-            "MiniMax 接口返回 HTTP " + str(status) + ": " + _redact(str(text)[:300], api_key)
+            "模型接口返回 HTTP " + str(status) + ": " + _redact(str(text)[:300], api_key)
         )
     try:
         data = json.loads(text)
     except ValueError as exc:
         raise ExplainerError(
-            "MiniMax 返回的不是合法 JSON: " + _redact(str(text)[:300], api_key)
+            "模型返回的不是合法 JSON: " + _redact(str(text)[:300], api_key)
         ) from exc
     if not isinstance(data, dict):
-        raise ExplainerError("MiniMax 返回的 JSON 不是对象")
+        raise ExplainerError("模型返回的 JSON 不是对象")
+    usage_raw = data.get("usage") or {}
+    if protocol == PROTOCOL_OPENAI:
+        choices = data.get("choices") or []
+        content = ""
+        if choices and isinstance(choices[0], dict):
+            message = choices[0].get("message") or {}
+            if isinstance(message, dict):
+                content = str(message.get("content") or "")
+        if not content.strip():
+            raise ExplainerError("模型返回了空内容")
+        usage = {
+            "input_tokens": usage_raw.get("prompt_tokens"),
+            "output_tokens": usage_raw.get("completion_tokens"),
+            "total_tokens": usage_raw.get("total_tokens"),
+        }
+        return content.strip(), usage
     parts: list[str] = []
     for chunk in data.get("content") or []:
         if isinstance(chunk, dict) and chunk.get("type") == "text" and chunk.get("text"):
             parts.append(str(chunk["text"]))
     if not parts:
-        raise ExplainerError("MiniMax 返回了空内容")
-    usage_raw = data.get("usage") or {}
+        raise ExplainerError("模型返回了空内容")
     usage = {
         "input_tokens": usage_raw.get("input_tokens"),
         "output_tokens": usage_raw.get("output_tokens"),
         "total_tokens": usage_raw.get("total_tokens"),
     }
     return "".join(parts).strip(), usage
+
+
+# 旧名保留下来, 外部脚本按老名字调用也不会断
+call_minimax = call_model
 
 
 # --------------------------------------------------------------------------
@@ -577,6 +725,7 @@ def fetch_problem(pid: str, cookie: Optional[str] = None, timeout: int = 20) -> 
 def explain(target: str, style: str = "面向初学者", cookie: Optional[str] = None,
             model: Optional[str] = None, timeout: int = 120,
             config: Optional[dict[str, str]] = None,
+            provider: Optional[str] = None,
             caller: Optional[Callable[..., tuple[str, dict[str, Any]]]] = None,
             fetcher: Optional[Callable[..., dict[str, Any]]] = None) -> dict[str, Any]:
     """讲解一道题。target 可以是题号, 也可以是粘贴的题面文本。"""
@@ -600,10 +749,10 @@ def explain(target: str, style: str = "面向初学者", cookie: Optional[str] =
         raise ExplainerError(LOGIN_REQUIRED_HINT)
 
     prompt = build_prompt(problem_text, style)
-    cfg = dict(config) if config else resolve_config()
+    cfg = dict(config) if config else resolve_config(provider=provider)
     if model:
         cfg["model"] = model
-    call = caller or call_minimax
+    call = caller or call_model
     markdown, usage = call(prompt, cfg, timeout)
     return {
         "ok": True,
@@ -612,6 +761,8 @@ def explain(target: str, style: str = "面向初学者", cookie: Optional[str] =
         "usage": usage,
         "elapsed_ms": int((time.time() - started) * 1000),
         "source": source,
+        "provider": str(cfg.get("provider") or ""),
+        "model": str(cfg.get("model") or ""),
     }
 
 
@@ -860,6 +1011,148 @@ def _selftest() -> int:
         assert "冲刺提分" in prompt
         assert "给定 n 个整数, 输出它们的和。" in prompt
 
+    @case("模型预设表可加载且字段齐全")
+    def _() -> None:
+        table = load_providers()
+        assert table["providers"], table
+        assert table["protocols"], table
+        for spec in table["providers"]:
+            assert spec["id"] and spec["label"] and spec["protocol"], spec
+            assert spec["key_env"], spec
+
+    @case("默认厂商在预设表里")
+    def _() -> None:
+        table = load_providers()
+        ids = [str(s["id"]) for s in table["providers"]]
+        assert str(table["default_provider"]) in ids, ids
+
+    @case("厂商预设只引用已知协议")
+    def _() -> None:
+        table = load_providers()
+        known = set(table["protocols"])
+        for spec in table["providers"]:
+            assert str(spec["protocol"]) in known, spec
+
+    @case("find_provider 未知 id 时报错并列出可选")
+    def _() -> None:
+        try:
+            find_provider("no-such-vendor")
+        except ExplainerError as exc:
+            assert "no-such-vendor" in str(exc), str(exc)
+            assert "minimax" in str(exc), str(exc)
+        else:
+            raise AssertionError("应当抛 ExplainerError")
+
+    @case("resolve_config 按厂商读对应环境变量")
+    def _() -> None:
+        with _env_patch(**{"DEEPSEEK_API_KEY": "ds-key", "DEEPSEEK_BASE_URL": None,
+                           "DEEPSEEK_MODEL": None, API_KEY_ENV: None}):
+            cfg = resolve_config(provider="deepseek", use_registry=False)
+        assert cfg["api_key"] == "ds-key"
+        assert cfg["protocol"] == "openai"
+        assert cfg["provider"] == "deepseek"
+        assert cfg["base_url"] == "https://api.deepseek.com", cfg
+        assert cfg["model"] == "deepseek-chat", cfg
+
+    @case("resolve_config 缺厂商密钥时报错并点名变量")
+    def _() -> None:
+        with _env_patch(**{"MOONSHOT_API_KEY": None, API_KEY_ENV: None}):
+            try:
+                resolve_config(provider="moonshot", use_registry=False)
+            except ExplainerError as exc:
+                assert "MOONSHOT_API_KEY" in str(exc), str(exc)
+            else:
+                raise AssertionError("应当抛 ExplainerError")
+
+    @case("自定义厂商走 LLM_API_KEY")
+    def _() -> None:
+        with _env_patch(**{"LLM_API_KEY": "custom-key",
+                           "LLM_BASE_URL": "http://127.0.0.1:11434/v1",
+                           "LLM_MODEL": "qwen2.5:7b", API_KEY_ENV: None}):
+            cfg = resolve_config(provider="custom", use_registry=False)
+        assert cfg["api_key"] == "custom-key"
+        assert cfg["base_url"] == "http://127.0.0.1:11434/v1"
+        assert cfg["model"] == "qwen2.5:7b"
+
+    @case("call_model anthropic 协议请求形状正确")
+    def _() -> None:
+        def transport(url, headers, body, timeout):
+            assert url == "https://x.test/v1/messages", url
+            assert headers["x-api-key"] == "fake-key"
+            assert headers["anthropic-version"] == ANTHROPIC_VERSION
+            assert body["model"] == "m"
+            return 200, json.dumps({"content": [{"type": "text", "text": "讲解"}],
+                                     "usage": {"input_tokens": 1, "output_tokens": 2}})
+        text, usage = call_model("prompt", {"api_key": "fake-key", "base_url": "https://x.test",
+                                            "model": "m", "protocol": "anthropic"},
+                                 timeout=5, transport=transport)
+        assert text == "讲解"
+        assert usage["input_tokens"] == 1 and usage["output_tokens"] == 2
+
+    @case("call_model openai 协议请求形状与解析")
+    def _() -> None:
+        def transport(url, headers, body, timeout):
+            assert url == "https://x.test/chat/completions", url
+            assert headers["Authorization"] == "Bearer fake-key", headers
+            assert "x-api-key" not in headers
+            assert body["messages"][0]["content"] == "prompt"
+            return 200, json.dumps({"choices": [{"message": {"content": "## 讲解\n正文"}}],
+                                     "usage": {"prompt_tokens": 5, "completion_tokens": 6,
+                                               "total_tokens": 11}})
+        text, usage = call_model("prompt", {"api_key": "fake-key", "base_url": "https://x.test",
+                                            "model": "m", "protocol": "openai"},
+                                 timeout=5, transport=transport)
+        assert "讲解" in text
+        assert usage["input_tokens"] == 5
+        assert usage["output_tokens"] == 6
+        assert usage["total_tokens"] == 11
+
+    @case("call_model 未知协议时报错")
+    def _() -> None:
+        try:
+            call_model("prompt", {"api_key": "k", "base_url": "https://x.test",
+                                   "model": "m", "protocol": "grpc"}, timeout=5,
+                       transport=lambda *a: (200, "{}"))
+        except ExplainerError as exc:
+            assert "grpc" in str(exc), str(exc)
+        else:
+            raise AssertionError("应当抛 ExplainerError")
+
+    @case("call_model 缺密钥时报错并点名环境变量")
+    def _() -> None:
+        try:
+            call_model("prompt", {"base_url": "https://x.test", "model": "m",
+                                   "protocol": "openai", "key_env": "DEEPSEEK_API_KEY"},
+                       timeout=5, transport=lambda *a: (200, "{}"))
+        except ExplainerError as exc:
+            assert "DEEPSEEK_API_KEY" in str(exc), str(exc)
+        else:
+            raise AssertionError("应当抛 ExplainerError")
+
+    @case("call_model 非 200 时报错且不含密钥")
+    def _() -> None:
+        try:
+            call_model("prompt", {"api_key": "fake-key", "base_url": "https://x.test",
+                                   "model": "m", "protocol": "openai"}, timeout=5,
+                       transport=lambda url, headers, body, timeout: (401, '{"error":"bad key"}'))
+        except ExplainerError as exc:
+            assert "401" in str(exc), str(exc)
+            assert "fake-key" not in str(exc), str(exc)
+        else:
+            raise AssertionError("应当抛 ExplainerError")
+
+    @case("_endpoint 不重复拼已经写全的路径")
+    def _() -> None:
+        assert _endpoint("https://x.test", "/v1/messages") == "https://x.test/v1/messages"
+        assert _endpoint("https://x.test/v1/messages", "/v1/messages") == "https://x.test/v1/messages"
+        assert _endpoint("https://x.test/", "/chat/completions") == "https://x.test/chat/completions"
+
+    @case("自定义厂商的地址与模型留空交给用户填")
+    def _() -> None:
+        spec = find_provider("custom")
+        assert spec["base_url"] == "", spec
+        assert spec["model"] == "", spec
+
     passed = 0
     failed = 0
     print("洛谷题目自动讲解 离线自检")
@@ -892,6 +1185,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out", help="把讲解写入的 Markdown 文件")
     ap.add_argument("--style", default="面向初学者", help="讲解风格, 默认 面向初学者")
     ap.add_argument("--model", help="覆盖模型名")
+    ap.add_argument("--provider", help="模型厂商 id, 见 explainer/providers.json (默认 minimax)")
     ap.add_argument("--timeout", type=int, default=120, help="调用超时秒数, 默认 120")
     ap.add_argument("--json", action="store_true", help="以 JSON 输出结果")
     ap.add_argument("--selftest", action="store_true", help="离线自检, 不联网")
@@ -919,7 +1213,8 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
         return 2
 
     try:
-        result = explain(target, style=args.style, model=args.model, timeout=args.timeout)
+        result = explain(target, style=args.style, model=args.model,
+                         provider=args.provider, timeout=args.timeout)
     except ExplainerError as exc:
         print("[讲解失败] " + str(exc), file=sys.stderr)
         return 1

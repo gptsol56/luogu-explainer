@@ -46,6 +46,11 @@
 
       <div class="form-row">
         <div class="form-row-item">
+          <label class="field-label" for="provider-select">用哪个模型</label>
+          <select class="input select" id="provider-select"></select>
+          <p class="hint" id="provider-hint"></p>
+        </div>
+        <div class="form-row-item">
           <label class="field-label" for="style-select">讲解风格</label>
           <select class="input select" id="style-select">
             <option value="面向初学者">面向初学者</option>
@@ -66,20 +71,27 @@
         </p>
         <label class="field-label" for="key-input">API Key</label>
         <input class="input" id="key-input" type="password" autocomplete="off"
-               placeholder="粘贴你的 MiniMax API Key">
+               placeholder="粘贴你选的那家厂商的 API Key">
         <div class="form-row">
           <div class="form-row-item">
             <label class="field-label" for="base-input">接口地址</label>
             <input class="input" id="base-input" type="text" autocomplete="off"
-                   value="https://api.minimaxi.com/anthropic">
+                   placeholder="https://api.deepseek.com">
           </div>
           <div class="form-row-item">
-            <label class="field-label" for="model-input">模型</label>
+            <label class="field-label" for="model-input">模型名</label>
             <input class="input" id="model-input" type="text" autocomplete="off"
-                   value="MiniMax-M3.1-Flash">
+                   placeholder="deepseek-chat">
           </div>
         </div>
         <div class="form-row">
+          <div class="form-row-item">
+            <label class="field-label" for="protocol-select">接口协议</label>
+            <select class="input select" id="protocol-select">
+              <option value="anthropic">Anthropic 风格 (/v1/messages)</option>
+              <option value="openai">OpenAI 风格 (/chat/completions)</option>
+            </select>
+          </div>
           <div class="form-row-item form-row-action">
             <button class="btn" id="save-key-btn" type="button">保存到本机</button>
             <button class="btn" id="clear-key-btn" type="button">清除</button>
@@ -164,6 +176,8 @@ scripts\install_task.ps1              # 注册成 Windows 计划任务</code></p
           <p class="mode-desc">
             GitHub Pages 上没有后端, 所以用你自己带的密钥直连模型接口。
             密钥只存在本机浏览器 localStorage, 不经过任何服务器。
+            <strong>有的厂商不返回 CORS 头, 浏览器会被拦</strong> ——
+            选这类厂商时页面会直接告诉你, 想用就改跑本机代理模式。
           </p>
         </div>
         <div class="mode-item">

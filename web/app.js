@@ -19,6 +19,9 @@
   var currentMode = null;
   var currentMarkdown = "";
   var currentTitle = "讲解";
+  var providerTable = null;   // explainer/providers.json 的内容
+  var currentProvider = null; // 当前选中的厂商 id
+  var lastHealth = null;      // 最近一次 /api/health 的结果
 
   function $(sel) { return document.querySelector(sel); }
   function byId(id) { return document.getElementById(id); }
@@ -281,10 +284,171 @@
       if (baseInput && saved.base_url) { baseInput.value = saved.base_url; }
       var modelInput = byId('model-input');
       if (modelInput && saved.model) { modelInput.value = saved.model; }
+      var protocolSelect = byId('protocol-select');
+      if (protocolSelect && saved.protocol) { protocolSelect.value = saved.protocol; }
     } else {
       state.textContent = '未保存密钥';
       state.classList.add('is-bad');
     }
+  }
+
+  /* --------------------------------------------------------------
+   * 模型厂商预设
+   * 唯一真源是 explainer/providers.json —— 后端读它, 前端也读它, 两端不会漂。
+   * 本机代理模式走 /api/providers, 静态站走同目录的 providers.json。
+   * -------------------------------------------------------------- */
+  function loadProviders() {
+    var urls = ['/api/providers', 'providers.json'];
+    function attempt(index) {
+      if (index >= urls.length) {
+        return Promise.reject(new Error('模型预设表读取失败'));
+      }
+      return fetch(urls[index]).then(function (resp) {
+        if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+        return resp.json();
+      }).catch(function () { return attempt(index + 1); });
+    }
+    return attempt(0).then(function (data) {
+      if (!data || !data.providers || !data.providers.length) {
+        throw new Error('模型预设表内容不完整');
+      }
+      providerTable = data;
+      return data;
+    });
+  }
+
+  function findProviderSpec(id) {
+    if (!providerTable || !id) { return null; }
+    for (var i = 0; i < providerTable.providers.length; i++) {
+      if (providerTable.providers[i].id === id) { return providerTable.providers[i]; }
+    }
+    return null;
+  }
+
+  function renderProviderOptions() {
+    var select = byId('provider-select');
+    if (!select || !providerTable) { return; }
+    select.innerHTML = '';
+    providerTable.providers.forEach(function (spec) {
+      var option = document.createElement('option');
+      option.value = spec.id;
+      option.textContent = spec.label;
+      select.appendChild(option);
+    });
+    var saved = loadByok();
+    var wanted = (saved && saved.provider) || providerTable.default_provider;
+    if (!findProviderSpec(wanted)) { wanted = providerTable.default_provider; }
+    select.value = wanted;
+    currentProvider = wanted;
+  }
+
+  function applyProviderToByok() {
+    var spec = findProviderSpec(currentProvider);
+    if (!spec) { return; }
+    var base = byId('base-input');
+    var model = byId('model-input');
+    var protocol = byId('protocol-select');
+    if (base && spec.base_url) { base.value = spec.base_url; }
+    if (model && spec.model) { model.value = spec.model; }
+    if (protocol && spec.protocol) { protocol.value = spec.protocol; }
+  }
+
+  function updateProviderHint() {
+    var hint = byId('provider-hint');
+    if (!hint) { return; }
+    var spec = findProviderSpec(currentProvider);
+    if (!spec) { hint.textContent = ''; return; }
+    var parts = [];
+    // 末尾的句号先去掉, 拼接时统一补 —— 否则会出现"够用。。"这种双句号
+    if (spec.note) { parts.push(String(spec.note).replace(/[。．.\s]+$/, '')); }
+    if (currentMode === MODE.LOCAL) {
+      var row = null;
+      if (lastHealth && lastHealth.providers) {
+        for (var i = 0; i < lastHealth.providers.length; i++) {
+          if (lastHealth.providers[i].id === spec.id) { row = lastHealth.providers[i]; }
+        }
+      }
+      if (row && row.has_key) {
+        parts.push('服务端已经配好 ' + spec.label + ' 的密钥, 直接能用');
+      } else {
+        parts.push('服务端还没配这个家, 设好 ' + (spec.key_env || '对应环境变量') + ' 之后才能用');
+      }
+    } else if (spec.browser_direct === false) {
+      parts.push('这家不返回 CORS 头, 浏览器直连会被拦, 静态站里用不了 —— 想用就跑本机代理模式');
+    }
+    hint.textContent = parts.join('。') + '。';
+  }
+
+  /* --------------------------------------------------------------
+   * 浏览器直连模型 (只有自带密钥模式走这条路)
+   * 两种接口形状: Anthropic 风格与 OpenAI 风格。
+   * -------------------------------------------------------------- */
+  function joinEndpoint(baseUrl, suffix) {
+    var base = String(baseUrl || '').replace(/\/+$/, '');
+    if (!base) { throw new Error('接口地址为空'); }
+    if (base.slice(-suffix.length) === suffix) { return base; }
+    return base + suffix;
+  }
+
+  function callModelDirect(baseUrl, apiKey, model, protocol, prompt) {
+    var url;
+    var headers;
+    if (protocol === 'openai') {
+      url = joinEndpoint(baseUrl, '/chat/completions');
+      headers = {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      };
+    } else {
+      url = joinEndpoint(baseUrl, '/v1/messages');
+      headers = {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      };
+    }
+    var body = {
+      model: model,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }]
+    };
+    return fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+      .then(function (resp) {
+        return resp.text().then(function (textBody) {
+          var data;
+          try { data = JSON.parse(textBody); } catch (err) {
+            throw new Error('接口返回的不是 JSON (HTTP ' + resp.status + ')');
+          }
+          if (!resp.ok) {
+            var detail = (data && data.error && (data.error.message || data.error))
+              ? (data.error.message || data.error)
+              : textBody.slice(0, 200);
+            throw new Error('HTTP ' + resp.status + ': ' + detail);
+          }
+          return data;
+        });
+      });
+  }
+
+  function extractContent(data, protocol) {
+    if (protocol === 'openai') {
+      var choices = (data && data.choices) || [];
+      if (choices.length && choices[0] && choices[0].message) {
+        return String(choices[0].message.content || '');
+      }
+      return '';
+    }
+    var chunks = (data && data.content) || [];
+    return chunks.map(function (chunk) { return chunk.text || ''; }).join('');
+  }
+
+  function extractUsage(data, protocol) {
+    var usage = (data && data.usage) || {};
+    if (protocol === 'openai') {
+      return { input: usage.prompt_tokens, output: usage.completion_tokens };
+    }
+    return { input: usage.input_tokens, output: usage.output_tokens };
   }
 
   /* --------------------------------------------------------------
@@ -303,6 +467,7 @@
 
   function applyMode(result) {
     currentMode = result.mode;
+    lastHealth = result.health || null;
     var meta = byId('header-meta');
     var keyPanel = byId('key-panel');
     var hint = byId('input-hint');
@@ -312,7 +477,8 @@
       var h = result.health;
       if (meta) {
         meta.textContent = '本机代理模式 · 模型 ' + (h.model || '-') + ' · 接口 ' + (h.base_host || '-') +
-          ' · 密钥 ' + (h.has_key ? '在服务端' : '缺失') + ' · 版本 ' + (h.version || '-');
+          ' · 密钥 ' + (h.has_key ? '在服务端' : '缺失') + ' · 版本 ' + (h.version || '-') +
+          ' · 可选厂商 ' + ((h.providers || []).length) + ' 家';
       }
       if (keyPanel) { keyPanel.hidden = true; }
       if (hint) {
@@ -328,6 +494,7 @@
           creds.classList.add('is-bad');
         }
       }
+      updateProviderHint();
       return;
     }
     /* 静态模式 (GitHub Pages): 没有后端代理 */
@@ -343,6 +510,7 @@
     var punchBtn = byId('punch-btn');
     if (punchBtn) { punchBtn.disabled = true; punchBtn.title = '静态站没有后端, 打卡请用命令行工具'; }
     refreshKeyState();
+    updateProviderHint();
   }
 
   /* --------------------------------------------------------------
@@ -386,6 +554,11 @@
    * -------------------------------------------------------------- */
   function initExplain() {
     byId('explain-btn').addEventListener('click', doExplain);
+    byId('provider-select').addEventListener('change', function () {
+      currentProvider = byId('provider-select').value;
+      applyProviderToByok();
+      updateProviderHint();
+    });
     byId('demo-btn').addEventListener('click', doDemo);
     byId('copy-btn').addEventListener('click', doCopy);
     byId('download-btn').addEventListener('click', doDownload);
@@ -420,7 +593,7 @@
       return fetchJson('/api/explain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pid: pid, text: text, style: style })
+        body: JSON.stringify({ pid: pid, text: text, style: style, provider: currentProvider })
       }, 180000).then(function (data) {
         if (!data.ok) {
           showError('explain-error', data.error || '讲解失败');
@@ -429,6 +602,7 @@
         var usage = data.usage || {};
         showResult(data.title, data.markdown,
           '来源: ' + (data.source === 'luogu' ? '洛谷题号' : '粘贴题面') +
+          '　模型: ' + (data.model || '-') +
           '　用时: ' + (data.elapsed_ms || 0) + ' ms' +
           '　tokens: 输入 ' + (usage.input_tokens == null ? '-' : usage.input_tokens) +
           ' / 输出 ' + (usage.output_tokens == null ? '-' : usage.output_tokens));
@@ -450,8 +624,10 @@
     }
     var saved = loadByok();
     var keyInput = byId('key-input').value.trim();
-    var baseInput = byId('base-input').value.trim();
-    var modelInput = byId('model-input').value.trim();
+    var spec = findProviderSpec(currentProvider);
+    var baseInput = byId('base-input').value.trim() || (spec ? (spec.base_url || '') : '');
+    var modelInput = byId('model-input').value.trim() || (spec ? (spec.model || '') : '');
+    var protocol = byId('protocol-select').value.trim() || 'anthropic';
     var apiKey = keyInput || (saved ? saved.api_key : '');
     if (!apiKey) {
       showError('explain-error', '请先在上方填入 API Key 并点「保存到本机」, 或直接看演示样例。');
@@ -461,39 +637,16 @@
     }
     loadTemplate().then(function (template) {
       var prompt = buildPrompt(template, text, style);
-      return fetch(String(baseInput || 'https://api.minimaxi.com/anthropic').replace(/\/$/, '') + '/v1/messages', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: modelInput || 'MiniMax-M3.1-Flash',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-    }).then(function (resp) {
-      return resp.text().then(function (textBody) {
-        var data;
-        try { data = JSON.parse(textBody); } catch (err) {
-          throw new Error('接口返回的不是 JSON (HTTP ' + resp.status + ')');
-        }
-        if (!resp.ok) {
-          var detail = (data && data.error && data.error.message) ? data.error.message : textBody.slice(0, 200);
-          throw new Error('HTTP ' + resp.status + ': ' + detail);
-        }
-        var chunks = (data && data.content) || [];
-        var markdown = chunks.map(function (chunk) { return chunk.text || ''; }).join('').trim();
-        if (!markdown) { throw new Error('模型返回了空内容'); }
-        var usage = data.usage || {};
-        showResult(text.split('\n')[0].slice(0, 60) || '讲解', markdown,
-          '来源: 粘贴题面 (浏览器直连)' +
-          '　tokens: 输入 ' + (usage.input_tokens == null ? '-' : usage.input_tokens) +
-          ' / 输出 ' + (usage.output_tokens == null ? '-' : usage.output_tokens));
-      });
+      return callModelDirect(baseInput, apiKey, modelInput, protocol, prompt);
+    }).then(function (data) {
+      var markdown = extractContent(data, protocol).trim();
+      if (!markdown) { throw new Error('模型返回了空内容'); }
+      var usage = extractUsage(data, protocol);
+      showResult(text.split('\n')[0].slice(0, 60) || '讲解', markdown,
+        '来源: 粘贴题面 (浏览器直连)' +
+        '　模型: ' + (modelInput || '-') +
+        '　tokens: 输入 ' + (usage.input == null ? '-' : usage.input) +
+        ' / 输出 ' + (usage.output == null ? '-' : usage.output));
     }).catch(function (err) {
       showError('explain-error', '讲解失败: ' + err.message);
     }).then(function () {
@@ -525,7 +678,9 @@
     var ok = saveByok({
       api_key: key,
       base_url: byId('base-input').value.trim(),
-      model: byId('model-input').value.trim()
+      model: byId('model-input').value.trim(),
+      protocol: byId('protocol-select').value.trim() || 'anthropic',
+      provider: currentProvider
     });
     if (!ok) {
       showError('explain-error', '保存失败: 浏览器拒绝写入 localStorage。');
@@ -647,6 +802,13 @@
     detectMode().then(applyMode).catch(function (err) {
       var meta = byId('header-meta');
       if (meta) { meta.textContent = '模式检测失败: ' + err.message; }
+    });
+    loadProviders().then(function () {
+      renderProviderOptions();
+      updateProviderHint();
+    }).catch(function (err) {
+      var hint = byId('provider-hint');
+      if (hint) { hint.textContent = '模型预设表读取失败: ' + err.message; }
     });
   });
 })();
