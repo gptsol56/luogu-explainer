@@ -34,6 +34,7 @@ from urllib.parse import unquote, urlparse
 REPO_ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = REPO_ROOT / "web"
 PROMPT_TEMPLATE_PATH = REPO_ROOT / "explainer" / "prompt_template.json"
+SAMPLES_DIR = REPO_ROOT / "explainer" / "samples"
 VERSION = "1.2.0"
 MAX_BODY_BYTES = 2 * 1024 * 1024
 
@@ -139,6 +140,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._serve_prompt_template()
             if path == "/api/providers":
                 return self._serve_providers()
+            if path.startswith("/examples/"):
+                return self._serve_samples(path[len("/examples/"):])
             if path.startswith("/api/"):
                 return self._send_error_json("未知接口: " + path, status=404)
             return self._serve_static(path)
@@ -301,6 +304,26 @@ class Handler(BaseHTTPRequestHandler):
             body = PROMPT_TEMPLATE_PATH.read_bytes()
         except OSError:
             return self._send_error_json("提示词模板不存在", status=404)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    # ---------------- 示例题库 ----------------
+
+    def _serve_samples(self, relative: str) -> None:
+        """发示例题库里的文件。清单与每道题都放在 explainer/samples/ 下。"""
+        target = _safe_join(SAMPLES_DIR, unquote(relative))
+        if target is None:
+            return self._send_error_json("非法路径", status=403)
+        if not target.is_file():
+            return self._send_error_json("示例题不存在: " + relative, status=404)
+        try:
+            body = target.read_bytes()
+        except OSError:
+            return self._send_error_json("读取文件失败", status=500)
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))

@@ -33,6 +33,8 @@ jobs:
         run: python explainer/luogu_explainer.py --selftest
       - name: 站点构建脚本离线自检
         run: python tools/build_site.py --selftest
+      - name: 示例题库离线自检
+        run: python tools/build_samples.py --selftest
 
   web-smoke:
     name: 网页应用冒烟测试
@@ -56,8 +58,8 @@ jobs:
           curl -sf http://127.0.0.1:8848/ | head -c 120
           echo
           curl -sf http://127.0.0.1:8848/prompt_template.json > /tmp/tpl.json
-          curl -sf http://127.0.0.1:8848/sample-explanation.json > /tmp/sample.json
-          python tools/check_assets.py /tmp/tpl.json /tmp/sample.json
+          curl -sf http://127.0.0.1:8848/examples/index.json > /tmp/samples_index.json
+          python tools/check_assets.py /tmp/tpl.json explainer/samples
           if curl -sf -o /dev/null http://127.0.0.1:8848/api/notes; then
             echo 'notes 接口不该存在'
             exit 1
@@ -79,7 +81,8 @@ jobs:
           test -f _site/index.html
           test -f _site/app.js
           test -f _site/style.css
-          test -f _site/sample-explanation.json
+          test -f _site/examples/index.json
+          ls _site/examples/*.json > /dev/null
           test -f _site/prompt_template.json
           if grep -rIl -e 'MINIMAX_API_KEY=' -e 'LUOGU_CLIENT_ID=' -e '__client_id=' _site; then
             echo '产物里出现凭据字面量'

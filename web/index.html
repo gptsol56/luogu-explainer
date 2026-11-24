@@ -60,7 +60,6 @@
         </div>
         <div class="form-row-item form-row-action">
           <button class="btn btn-primary" id="explain-btn" type="button">生成讲解</button>
-          <button class="btn" id="demo-btn" type="button">看演示样例</button>
         </div>
       </div>
 
@@ -105,6 +104,15 @@
         题号与题面二选一。填题号需要洛谷登录态, 没有登录态时直接改用「粘贴题面」即可。
       </p>
       <div class="notice notice-error" id="explain-error" hidden></div>
+    </div>
+
+    <div class="card" id="samples-card">
+      <h2 class="card-title">示例题</h2>
+      <p class="hint">
+        这几道题的解析是真调用模型生成后存下来的, 随时能看, 不用配密钥。点哪道看哪道。
+      </p>
+      <div class="sample-list" id="sample-list"></div>
+      <p class="hint" id="sample-hint"></p>
     </div>
 
     <div class="card" id="explain-result" hidden>
@@ -186,7 +194,7 @@ scripts\install_task.ps1              # 注册成 Windows 计划任务</code></p
           <h4 class="mode-name">演示模式</h4>
           <p class="mode-desc">
             提交一份预生成的样例讲解, 让没有密钥的人也能看到完整效果。
-            <strong>注意: 演示样例是预先生成的, 不是实时调用。</strong>
+            <strong>注意: 示例题的解析是预先生成的, 不是实时调用。</strong>
           </p>
         </div>
       </div>
