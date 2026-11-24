@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-11-24T14:04:40+08:00",
+  "samples": [
+    {
+      "id": "P1001",
+      "pid": "P1001",
+      "title": "A+B Problem",
+      "difficulty": "入门",
+      "summary": "读入两个整数, 输出它们的和",
+      "file": "P1001.json",
+      "model": "MiniMax-M3.1-Flash",
+      "provider": "minimax",
+      "generated_at": "2026-11-24T14:02:06+08:00"
+    },
+    {
+      "id": "P1090",
+      "pid": "P1090",
+      "title": "[NOIP 2004 提高组] 合并果子",
+      "difficulty": "普及",
+      "summary": "每次合并的代价是两堆之和, 用小根堆贪心",
+      "file": "P1090.json",
+      "model": "MiniMax-M3.1-Flash",
+      "provider": "minimax",
+      "generated_at": "2026-11-24T14:02:24+08:00"
+    },
+    {
+      "id": "P1421",
+      "pid": "P1421",
+      "title": "小玉买文具",
+      "difficulty": "入门",
+      "summary": "把元角换算成角, 再整除 19",
+      "file": "P1421.json",
+      "model": "MiniMax-M3.1-Flash",
+      "provider": "minimax",
+      "generated_at": "2026-11-24T14:02:37+08:00"
+    }
+  ]
+}

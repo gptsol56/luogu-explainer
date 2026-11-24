@@ -63,6 +63,7 @@ DEFAULT_CHAPTER_FILES = {
     3: "03-提交日记-洛谷打卡助手.md",
     4: "04-把仓库做成一个完整的整体.md",
     5: "05-拆仓库-公开的站点与私有的笔记.md",
+    6: "06-示例题解析库.md",
 }
 # 这里原本还有两张表: DEFAULT_CHAPTER_META（每章的标题与标签）和 DEFAULT_SUMMARY
 # （我替「学习总结」写的那段总体总结），以及 SUMMARY_FILE / SUMMARY_META。

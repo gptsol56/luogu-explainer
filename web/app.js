@@ -49,6 +49,30 @@
     return label; // 危险协议 (javascript: 等) 一律降级成纯文本
   }
 
+  function stripLatex(text) {
+    // 页面没有公式渲染器, LaTeX 语法降级成人能读的样子。
+    // 行内代码由 renderInline 提前摘走了, 不会被这里改到。
+    return String(text == null ? '' : text)
+      .replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)')
+      .replace(/\\sqrt\s*\{([^{}]*)\}/g, '√$1')
+      .replace(/\\lfloor/g, '⌊')
+      .replace(/\\rfloor/g, '⌋')
+      .replace(/\\lceil/g, '⌈')
+      .replace(/\\rceil/g, '⌉')
+      .replace(/\\times/g, '×')
+      .replace(/\\div/g, '÷')
+      .replace(/\\pm/g, '±')
+      .replace(/\\le(?![a-zA-Z])/g, '≤')
+      .replace(/\\ge(?![a-zA-Z])/g, '≥')
+      .replace(/\\neq(?![a-zA-Z])/g, '≠')
+      .replace(/\\ldots/g, '…')
+      .replace(/\\cdots/g, '…')
+      .replace(/\\sum/g, 'Σ')
+      .replace(/\\left|\\right/g, '')
+      .replace(/\\\\/g, '\\')
+      .replace(/\\([a-zA-Z]+)/g, '$1');
+  }
+
   function renderInline(text) {
     var out = escapeHtml(text);
     var codes = [];
@@ -56,6 +80,7 @@
       codes.push(code);
       return '\x00C' + (codes.length - 1) + '\x00';
     });
+    out = stripLatex(out);
     out = out.replace(BOLD_STAR, '<strong>$1</strong>');
     out = out.replace(BOLD_UNDER, '<strong>$1</strong>');
     out = out.replace(ITALIC, '$1<em>$2</em>');
@@ -83,7 +108,12 @@
   }
 
   function renderMarkdown(src) {
-    var lines = String(src == null ? '' : src).replace(/\r\n?/g, '\n').split('\n');
+    var raw = String(src == null ? '' : src);
+    // 块级公式 \[ ... \] 先整体降级, 否则行首行尾会各剩一个方括号
+    raw = raw.replace(/\\\[[\s\S]*?\\\]/g, function (block) {
+      return block.replace(/^\\\[/, '').replace(/\\\]$/, '');
+    });
+    var lines = raw.replace(/\r\n?/g, '\n').split('\n');
     var html = [];
     var i = 0;
 
@@ -490,7 +520,7 @@
     }
     /* 静态模式 (GitHub Pages): 没有后端代理 */
     if (meta) {
-      meta.textContent = '静态站点模式 · 密钥只保存在本机浏览器 · 演示样例可用';
+      meta.textContent = '静态站点模式 · 密钥只保存在本机浏览器 · 示例题可看';
     }
     if (keyPanel) { keyPanel.hidden = false; }
     if (hint) {
@@ -548,7 +578,6 @@
       currentProvider = byId('provider-select').value;
       applyProviderToByok();
     });
-    byId('demo-btn').addEventListener('click', doDemo);
     byId('copy-btn').addEventListener('click', doCopy);
     byId('download-btn').addEventListener('click', doDownload);
     byId('save-key-btn').addEventListener('click', doSaveKey);
@@ -619,7 +648,7 @@
     var protocol = byId('protocol-select').value.trim() || 'anthropic';
     var apiKey = keyInput || (saved ? saved.api_key : '');
     if (!apiKey) {
-      showError('explain-error', '请先在上方填入 API Key 并点「保存到本机」, 或直接看演示样例。');
+      showError('explain-error', '请先在上方填入 API Key 并点「保存到本机」, 或直接翻下面的示例题。');
       button.disabled = false;
       button.textContent = '生成讲解';
       return;
@@ -645,16 +674,116 @@
     return undefined;
   }
 
-  function doDemo() {
+  /* --------------------------------------------------------------
+   * 示例题解析库 (explainer/samples/index.json)
+   * 库里每道题都是真调用模型生成后存下来的, 页面只负责列出来和读出来。
+   * -------------------------------------------------------------- */
+  var sampleIndex = null;
+
+  function loadSampleIndex() {
+    var urls = ['examples/index.json', '/examples/index.json'];
+    function attempt(i) {
+      if (i >= urls.length) { return Promise.reject(new Error('示例题清单读取失败')); }
+      return fetch(urls[i]).then(function (resp) {
+        if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+        return resp.json();
+      }).catch(function () { return attempt(i + 1); });
+    }
+    return attempt(0).then(function (data) {
+      if (!data || !data.samples || !data.samples.length) {
+        throw new Error('示例题清单是空的');
+      }
+      sampleIndex = data;
+      return data;
+    });
+  }
+
+  function renderSamples() {
+    var list = byId('sample-list');
+    if (!list || !sampleIndex) { return; }
+    list.innerHTML = '';
+    sampleIndex.samples.forEach(function (entry) {
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'sample-item';
+      item.setAttribute('data-id', entry.id || '');
+
+      var head = document.createElement('span');
+      head.className = 'sample-head';
+      var pid = document.createElement('span');
+      pid.className = 'sample-id';
+      pid.textContent = entry.pid || entry.id || '';
+      var title = document.createElement('span');
+      title.className = 'sample-title';
+      title.textContent = entry.title || entry.id || '';
+      head.appendChild(pid);
+      head.appendChild(title);
+
+      var summary = document.createElement('span');
+      summary.className = 'sample-summary';
+      summary.textContent = entry.summary || '';
+
+      var tags = document.createElement('span');
+      tags.className = 'sample-tags';
+      if (entry.difficulty) {
+        var diff = document.createElement('span');
+        diff.className = 'sample-tag';
+        diff.textContent = entry.difficulty;
+        tags.appendChild(diff);
+      }
+      if (entry.model) {
+        var model = document.createElement('span');
+        model.className = 'sample-tag sample-tag-model';
+        model.textContent = entry.model;
+        tags.appendChild(model);
+      }
+
+      item.appendChild(head);
+      item.appendChild(summary);
+      item.appendChild(tags);
+      item.addEventListener('click', function () { openSample(entry); });
+      list.appendChild(item);
+    });
+  }
+
+  function providerLabel(providerId) {
+    var spec = findProviderSpec(providerId);
+    return spec ? spec.label : (providerId || '');
+  }
+
+  function sampleMetaText(data) {
+    var meta = data.meta || {};
+    var parts = [];
+    if (meta.model) { parts.push('模型 ' + meta.model); }
+    if (meta.elapsed_ms) { parts.push('用时 ' + meta.elapsed_ms + ' ms'); }
+    if (meta.input_tokens || meta.output_tokens) {
+      parts.push('tokens 输入 ' + (meta.input_tokens == null ? '-' : meta.input_tokens) +
+        ' / 输出 ' + (meta.output_tokens == null ? '-' : meta.output_tokens));
+    }
+    var head = '生成于真实 ' + (providerLabel(meta.provider) || '模型') + ' 调用';
+    if (parts.length) { head += ' · ' + parts.join(' · '); }
+    return head + ' · 预先生成的样例, 不是实时调用';
+  }
+
+  function openSample(entry) {
     clearError('explain-error');
-    fetch('sample-explanation.json').then(function (resp) {
-      if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
-      return resp.json();
-    }).then(function (data) {
-      showResult(data.title || '演示样例', data.markdown || '',
-        (data.meta || '演示样例') + '　注意: 这是预先生成的样例, 不是实时调用');
+    var list = byId('sample-list');
+    var nodes = list ? list.querySelectorAll('.sample-item') : [];
+    Array.prototype.forEach.call(nodes, function (node) {
+      node.classList.toggle('is-active', node.getAttribute('data-id') === (entry.id || ''));
+    });
+    var urls = ['examples/' + entry.file, '/examples/' + entry.file];
+    function attempt(i) {
+      if (i >= urls.length) { return Promise.reject(new Error('示例题文件读取失败')); }
+      return fetch(urls[i]).then(function (resp) {
+        if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+        return resp.json();
+      }).catch(function () { return attempt(i + 1); });
+    }
+    attempt(0).then(function (data) {
+      showResult(data.title || entry.title || entry.id, data.markdown || '', sampleMetaText(data));
     }).catch(function (err) {
-      showError('explain-error', '演示样例读取失败: ' + err.message);
+      showError('explain-error', '示例题读取失败: ' + err.message);
     });
   }
 
@@ -791,6 +920,12 @@
     detectMode().then(applyMode).catch(function (err) {
       var meta = byId('header-meta');
       if (meta) { meta.textContent = '模式检测失败: ' + err.message; }
+    });
+    loadSampleIndex().then(function () {
+      renderSamples();
+    }).catch(function (err) {
+      var hint = byId('sample-hint');
+      if (hint) { hint.textContent = '示例题读取失败: ' + err.message; }
     });
     loadProviders().then(function () {
       renderProviderOptions();
