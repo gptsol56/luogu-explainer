@@ -342,6 +342,24 @@
     currentProvider = wanted;
   }
 
+  function renderDirectList() {
+    var el = byId('byok-direct');
+    if (!el || !providerTable) { return; }
+    var ok = [];
+    var bad = [];
+    var unknown = [];
+    providerTable.providers.forEach(function (spec) {
+      if (spec.browser_direct === true) { ok.push(spec.label); }
+      else if (spec.browser_direct === false) { bad.push(spec.label); }
+      else { unknown.push(spec.label); }
+    });
+    var parts = [];
+    if (ok.length) { parts.push('浏览器能直连: ' + ok.join('、') + '。'); }
+    if (bad.length) { parts.push('静态站里会被浏览器拦下: ' + bad.join('、') + '。'); }
+    if (unknown.length) { parts.push(unknown.join('、') + ' 得看你自己的服务有没有发 CORS 头。'); }
+    el.textContent = parts.join('');
+  }
+
   function applyProviderToByok() {
     var spec = findProviderSpec(currentProvider);
     if (!spec) { return; }
@@ -351,32 +369,6 @@
     if (base && spec.base_url) { base.value = spec.base_url; }
     if (model && spec.model) { model.value = spec.model; }
     if (protocol && spec.protocol) { protocol.value = spec.protocol; }
-  }
-
-  function updateProviderHint() {
-    var hint = byId('provider-hint');
-    if (!hint) { return; }
-    var spec = findProviderSpec(currentProvider);
-    if (!spec) { hint.textContent = ''; return; }
-    var parts = [];
-    // 末尾的句号先去掉, 拼接时统一补 —— 否则会出现"够用。。"这种双句号
-    if (spec.note) { parts.push(String(spec.note).replace(/[。．.\s]+$/, '')); }
-    if (currentMode === MODE.LOCAL) {
-      var row = null;
-      if (lastHealth && lastHealth.providers) {
-        for (var i = 0; i < lastHealth.providers.length; i++) {
-          if (lastHealth.providers[i].id === spec.id) { row = lastHealth.providers[i]; }
-        }
-      }
-      if (row && row.has_key) {
-        parts.push('服务端已经配好 ' + spec.label + ' 的密钥, 直接能用');
-      } else {
-        parts.push('服务端还没配这个家, 设好 ' + (spec.key_env || '对应环境变量') + ' 之后才能用');
-      }
-    } else if (spec.browser_direct === false) {
-      parts.push('这家不返回 CORS 头, 浏览器直连会被拦, 静态站里用不了 —— 想用就跑本机代理模式');
-    }
-    hint.textContent = parts.join('。') + '。';
   }
 
   /* --------------------------------------------------------------
@@ -494,7 +486,6 @@
           creds.classList.add('is-bad');
         }
       }
-      updateProviderHint();
       return;
     }
     /* 静态模式 (GitHub Pages): 没有后端代理 */
@@ -510,7 +501,6 @@
     var punchBtn = byId('punch-btn');
     if (punchBtn) { punchBtn.disabled = true; punchBtn.title = '静态站没有后端, 打卡请用命令行工具'; }
     refreshKeyState();
-    updateProviderHint();
   }
 
   /* --------------------------------------------------------------
@@ -557,7 +547,6 @@
     byId('provider-select').addEventListener('change', function () {
       currentProvider = byId('provider-select').value;
       applyProviderToByok();
-      updateProviderHint();
     });
     byId('demo-btn').addEventListener('click', doDemo);
     byId('copy-btn').addEventListener('click', doCopy);
@@ -805,10 +794,14 @@
     });
     loadProviders().then(function () {
       renderProviderOptions();
-      updateProviderHint();
+      renderDirectList();
     }).catch(function (err) {
-      var hint = byId('provider-hint');
-      if (hint) { hint.textContent = '模型预设表读取失败: ' + err.message; }
+      var select = byId('provider-select');
+      if (select) {
+        select.disabled = true;
+        select.title = '模型预设表读取失败: ' + err.message;
+      }
+      if (window.console && window.console.error) { window.console.error('[providers] 预设表读取失败', err); }
     });
   });
 })();

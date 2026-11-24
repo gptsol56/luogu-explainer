@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>洛谷题目自动讲解</title>
 <meta name="description" content="面向自学与教学的洛谷算法题讲解助手: 填题号或粘题面, 模型按固定小节生成讲解。">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232F5D50'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23ffffff' font-family='sans-serif'>洛</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%238D44AD'/><text x='16' y='23' font-size='19' text-anchor='middle' fill='%23ffffff' font-family='sans-serif'>洛</text></svg>">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<div class="top-band">
 <header class="site-header">
   <div class="brand">
     <span class="brand-mark">洛</span>
@@ -26,6 +27,7 @@
   <button class="tab" type="button" role="tab" data-panel="panel-punch" aria-selected="false">② 每日打卡</button>
   <button class="tab" type="button" role="tab" data-panel="panel-about" aria-selected="false">③ 使用说明</button>
 </nav>
+</div>
 
 <main>
 
@@ -48,7 +50,6 @@
         <div class="form-row-item">
           <label class="field-label" for="provider-select">用哪个模型</label>
           <select class="input select" id="provider-select"></select>
-          <p class="hint" id="provider-hint"></p>
         </div>
         <div class="form-row-item">
           <label class="field-label" for="style-select">讲解风格</label>
@@ -177,8 +178,9 @@ scripts\install_task.ps1              # 注册成 Windows 计划任务</code></p
             GitHub Pages 上没有后端, 所以用你自己带的密钥直连模型接口。
             密钥只存在本机浏览器 localStorage, 不经过任何服务器。
             <strong>有的厂商不返回 CORS 头, 浏览器会被拦</strong> ——
-            选这类厂商时页面会直接告诉你, 想用就改跑本机代理模式。
+            哪些厂商能直连, 下面这行写着; 想用被拦的那几家就改跑本机代理模式。
           </p>
+          <p class="mode-desc" id="byok-direct"></p>
         </div>
         <div class="mode-item">
           <h4 class="mode-name">演示模式</h4>
@@ -198,7 +200,7 @@ scripts\install_task.ps1              # 注册成 Windows 计划任务</code></p
 </main>
 
 <footer class="site-footer">
-  松墨绿 · 洛谷题目自动讲解 · 密钥只留在服务端环境变量或你的浏览器 localStorage 里
+  红紫渐变 · 洛谷题目自动讲解 · 密钥只留在服务端环境变量或你的浏览器 localStorage 里
 </footer>
 
 <script src="app.js"></script>
