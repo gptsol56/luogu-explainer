@@ -35,6 +35,10 @@ jobs:
         run: python tools/build_site.py --selftest
       - name: 示例题库离线自检
         run: python tools/build_samples.py --selftest
+      - name: 目录生成器离线自检
+        run: python tools/gen_tree.py --selftest
+      - name: README 里的文件树不能过期
+        run: python tools/gen_tree.py --check
 
   web-smoke:
     name: 网页应用冒烟测试
