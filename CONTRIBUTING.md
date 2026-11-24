@@ -71,9 +71,9 @@ Git 是内容寻址的, 所以**哈希一致就是最强的证据**。推送后�
 
 `
 git rev-parse HEAD
-gh api repos/gptsol56/luogubot/commits/main --jq .sha
+gh api repos/gptsol56/luogu-explainer/commits/main --jq .sha
 git ls-tree -r HEAD
-gh api repos/gptsol56/luogubot/git/trees/main --jq '.tree[].sha'
+gh api repos/gptsol56/luogu-explainer/git/trees/main --jq '.tree[].sha'
 `
 
 两条 SHA 相同说明提交到位; 远端 tree 的每个 blob SHA 与本地 `git ls-tree` 逐个一致,
@@ -83,4 +83,5 @@ gh api repos/gptsol56/luogubot/git/trees/main --jq '.tree[].sha'
 
 | 版本 | 内容 |
 | --- | --- |
-| `v1.0.0` | 首个完整版本: 打卡工具 + 讲解模块 + 网页应用 + 学习笔记 |
+| `v1.0.0` | 首个完整版本: 打卡工具 + 讲解模块 + 网页应用, 站点上线 |
+| `v1.1.0` | 学习笔记并入本仓库: 五章正文 + DOCX 原稿 + 原始素材, 站点 / 打卡 / 笔记合并为一个仓库 |

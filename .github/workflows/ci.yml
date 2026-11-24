@@ -86,3 +86,24 @@ jobs:
             exit 1
           fi
           echo '静态产物校验通过'
+
+  notes:
+    name: 笔记与原稿同步校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装依赖
+        run: pip install python-docx
+      - name: 同步校验器自检
+        run: python tools/check_notes_sync.py --selftest
+      - name: notes 必须与 DOCX 原稿逐字节一致
+        run: python tools/check_notes_sync.py
+      - name: 转换结果零丢失
+        run: |
+          python tools/docx_to_md.py \
+            --input "docs/draft/淳阳项目组学习笔记_第一阶段_GIT_AND_AGENT.docx" \
+            --out-dir /tmp/notes-check --split --no-copy-docx
+          python tools/check_notes.py /tmp/notes-check
