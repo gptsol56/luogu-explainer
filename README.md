@@ -1,12 +1,24 @@
 # luogu-explainer
 
-> 洛谷题目自动讲解 —— 一个可交互的网页应用, 外加一个每天签到的小工具。
+> 洛谷题目自动讲解 —— 一个可交互的网页应用, 外加一个每天签到的小工具, 再加上第一阶段的学习笔记。
 > 站点只做**讲解**; 打卡是命令行工具的活儿, 原因见 [为什么打卡不在网页上](#为什么打卡不在网页上)。
 
 ![网页应用界面](docs/images/web-ui.png)
 
 仓库最早的一句话描述是 "an auto-explainer of the algorithm problems, only for teaching and self studying"。
-这句话仍然是准的 —— **题目讲解**是这个仓库的主线, **每日打卡**是顺手补上的第二件事。
+这句话仍然是准的 —— **题目讲解**是这个仓库的主线, **每日打卡**是顺手补上的第二件事,
+**学习笔记**是把这一阶段的过程留档的第三件事。
+
+## 怎么读这个仓库
+
+三块东西, 各有各的入口, 互不干扰:
+
+| 想看什么 | 去哪 | 需要什么 |
+| --- | --- | --- |
+| 讲解站点怎么用 | <https://gptsol56.github.io/luogu-explainer/> | 浏览器; 要真跑讲解则需要自己的模型密钥 |
+| 打卡怎么跑 | `luogu_punch.py` + [每日打卡](#四打卡) | `LUOGU_CLIENT_ID` 与 `LUOGU_UID` 两个环境变量 |
+| 这一阶段学了什么 | `notes/` 五章 | 什么都不需要, 直接在 GitHub 上读 |
+| 笔记的原始依据 | `docs/draft/` 与 `docs/source-materials/` | 什么都不需要 |
 
 ## 在线站点
 
@@ -21,7 +33,10 @@
 | 题目讲解 | `explainer/` | 取题 / 拼提示词 / 调模型。提示词模板是唯一真源 `explainer/prompt_template.json` |
 | 网页应用 | `server/` `web/` | 本机代理层 (仅标准库) + 前端单页 (无构建步骤, 不引 CDN) |
 | 每日打卡 | `luogu_punch.py` | 调洛谷 `/index/ajax_punch` 保住连续签到。凭据只走环境变量, 带 `--selftest` 离线自检 |
-| 测试与门禁 | `tests/` `tools/` `.github/` | 单元测试、站点构建脚本、CI 与 Pages 工作流 |
+| 学习笔记 | `notes/` | 五章正文, 直接在 GitHub 上读, 不需要任何服务 |
+| 笔记原稿 | `docs/draft/` | 笔记的 DOCX 原稿, 35 页 |
+| 原始素材 | `docs/source-materials/` | 第一至第四天的原始笔记、任务书、终端记录、预览图 |
+| 测试与门禁 | `tests/` `tools/` `.github/` | 单元测试、站点构建脚本、笔记同步校验、CI 与 Pages 工作流 |
 | 部署 | `Dockerfile` `docker-compose.yml` | 让"部署一个 API 代理层"有现成路径 |
 
 ## 快速开始
@@ -36,14 +51,15 @@ pip install -r requirements.txt
 
 ### 1. 先自检, 再干活
 
-```
-python luogu_punch.py --selftest                  # 23 条断言, 不联网
-python -m unittest discover -s tests -v           # 23 条单元测试
-python explainer/luogu_explainer.py --selftest    # 25 条断言, 不联网
-python tools/build_site.py --selftest             # 6 条断言, 不联网
-```
+| 命令 | 断言数 | 联网 | 查什么 |
+| --- | --- | --- | --- |
+| `python luogu_punch.py --selftest` | 23 | 否 | 打卡逻辑: 201 的两种含义、缺凭据提示、时区换算 |
+| `python -m unittest discover -s tests -v` | 23 | 否 | 打卡工具的单元测试 |
+| `python explainer/luogu_explainer.py --selftest` | 25 | 否 | 提示词模板与代码常量同源、不留未替换占位符 |
+| `python tools/build_site.py --selftest` | 6 | 否 | 静态产物组装: 文件齐全、模板可解析、无密钥字面量 |
+| `python tools/check_notes_sync.py --selftest` | 5 | 否 | 笔记同步比对器: 能抓到正文/图片/文件名的任何差异 |
 
-这四个命令**都不需要任何凭据**。没有它们, 工具一旦坏了你根本分不清是环境问题还是代码问题。
+这几个命令**都不需要任何凭据**。没有它们, 工具一旦坏了你根本分不清是环境问题还是代码问题。
 
 ### 2. 配置凭据
 
@@ -122,6 +138,74 @@ BYOK 模式下密钥只写入本机浏览器的 localStorage, 不经过任何服
 - `build_prompt` 不留未替换的占位符;
 - 模板里的 `required_sections` 与代码里的 `REQUIRED_SECTIONS` 必须是同一份定义。
 
+## 学习笔记
+
+第一阶段的学习笔记也在这个仓库里, 分三层: **正文**、**原稿**、**原始素材**。
+
+### 笔记正文
+
+| 文件 | 内容 |
+| --- | --- |
+| [notes/01-Git-学习记录.md](notes/01-Git-学习记录.md) | Git 概念、合并方式、团队协作与分支策略 |
+| [notes/02-AI-Agent-学习记录.md](notes/02-AI-Agent-学习记录.md) | Agent 与 LLM 的区别、六块组成、Harness、实测基线、踩坑记录 |
+| [notes/03-提交日记-洛谷打卡助手.md](notes/03-提交日记-洛谷打卡助手.md) | 一次真实的 Git 提交: 取证 → 写 → 提交 → 验证 |
+| [notes/04-把仓库做成一个完整的整体.md](notes/04-把仓库做成一个完整的整体.md) | 三个模块各归其位、两种部署形态、版本控制实操 |
+| [notes/05-拆仓库-公开的站点与私有的笔记.md](notes/05-拆仓库-公开的站点与私有的笔记.md) | 为什么拆仓库、BYOK 与提示词单一真源、清理迁移、验证证据 |
+
+正文是**纯章节内容**: 不带 YAML frontmatter, 不带"本文件来自 DOCX…"这类说明行。
+它们由 `docs/draft/` 里的 DOCX 原稿转换而来, 不是手抄的。
+
+### 笔记原稿与素材
+
+| 位置 | 是什么 |
+| --- | --- |
+| `docs/draft/` | 《淳阳项目组学习笔记_第一阶段_GIT_AND_AGENT.docx》, 35 页 / 段落 366 / 表格 17 / 内嵌图 3 |
+| `docs/source-materials/` | 第一至第四天的原始笔记、前置学习任务与计划、终端记录、版面预览图、技能盘点记录 |
+
+原始素材保留的理由很实在: 阶段任务书要交"过程", 原始稿和成稿放在一起, 以后回头看才知道
+哪些判断是后来改的。
+
+### 重新生成正文
+
+正文是转换产物, 所以要改就改 DOCX, 再重新转:
+
+```
+python tools/docx_to_md.py \
+  --input "docs/draft/淳阳项目组学习笔记_第一阶段_GIT_AND_AGENT.docx" \
+  --out-dir notes --split --no-copy-docx
+```
+
+转换器自带零丢失核对: 段落 343/343、表格行 119/119、内嵌图 3 张, 缺失 0。
+封面标题 (DOCX 的 h1 主标题) 有意不进章节正文 —— 它在本文件与 DOCX 封面里, 核对时会显式报出来。
+
+### 正文与原稿不会漂
+
+CI 里有一个作业专门盯这件事:
+
+```
+python tools/check_notes_sync.py     # 重新转一遍, 与仓库里的 notes/ 逐字节比对
+```
+
+只要有一处不一致 (哪怕只是少一个换行), 作业就红。Markdown 不会报错, 漂了从肉眼看不出来,
+GitHub 上照常渲染 —— 所以必须让机器每次都比一遍。
+
+## 关于学号与姓名
+
+笔记正文与 DOCX 原稿里有作者本人的姓名与学号, 按作者要求**原样保留**, 没有打码。
+
+笔记第四章、第五章里写着"笔记含姓名与学号, 所以只能在私有仓库里" —— 那是当时拆仓库时的判断,
+按"不改学习过程"的原则保留了原文。实际情况以本文件为准: 笔记现在就在这个公开仓库里。
+
+如果哪天要收回, 删掉 `notes/` 与 `docs/draft/` 即可, 站点与打卡工具不受影响, 转换与校验脚本也不受影响。
+
+## 还没做的, 以及为什么
+
+写清楚比含糊过去好, 这三条也是笔记第四章里记的:
+
+1. **真实打卡还没跑通。** 洛谷登录态只在本机浏览器里, 从没取出到环境变量, 所以至今没有一次真实的 `code=200` 输出。当前状态是"工具已就绪、打卡待凭据"。
+2. **填题号抓题面需要登录态。** 没有 Cookie 的用户只能粘贴题面; 公开站点上更是只能粘贴 —— 洛谷没有 CORS 头。
+3. **演示样例是预生成的。** 它是真的调过一次模型后存下来的, 但存下来之后模型再更新, 样例就会过时。所以界面里明确标了"这是预先生成的样例, 不是实时调用"。
+
 ## 部署
 
 ### GitHub Pages
@@ -153,19 +237,33 @@ luogu-explainer/
 ├── server/app.py           API 代理层 + 静态站点 (仅标准库)
 ├── web/                    前端单页 (无构建步骤, 不引 CDN)
 │   └── sample-explanation.json 真实调用生成的演示样例
+├── notes/                  学习笔记正文 (五章) + 内嵌图
+├── docs/
+│   ├── draft/              笔记 DOCX 原稿
+│   ├── source-materials/   第一至第四天的原始素材
+│   └── images/             界面截图
 ├── tests/                  打卡工具的单元测试
-├── tools/                  站点构建与 CI 校验脚本
+├── tools/                  站点构建、笔记转换与 CI 校验脚本
 ├── scripts/                计划任务安装 / 手动触发 / 启服务
-├── docs/images/            界面截图
 ├── .github/workflows/      CI 门禁与 Pages 部署
 ├── CONTRIBUTING.md         分支模型 / 提交规范 / 版本控制硬规矩
 └── requirements.txt
 ```
 
-## 版本控制
+## 这个仓库怎么长成现在这样
 
-分支模型、提交规范 (Conventional Commits)、合并方式、打 tag 规则, 以及"凭据永远不进版本库"
-"不提交大文件""不提交第三方源码树"这类硬规矩, 都写在 [CONTRIBUTING.md](CONTRIBUTING.md)。
+一开始是三个仓库: 公开的站点与代码、私有的笔记正文、私有的笔记原稿与素材。
+最后合成一个, 原因写在笔记第五章 —— 判断依据不是内容敏感度, 而是**访问方式**:
+谁能 clone、谁能访问 URL、要不要服务端。
+
+合并之后的几条硬规矩, 都在 [CONTRIBUTING.md](CONTRIBUTING.md) 里:
+
+- 凭据永远不进版本库 (只有空的 `.env.example`);
+- 不提交大文件、虚拟环境、缓存、第三方源码树;
+- 历史不改写: 不 rebase 已推送的共享分支, 不 force-push;
+- 一次提交只做一件事, 推完必须回读远端 tree 的 blob SHA 跟本地逐个对上。
+
+## 版本控制
 
 一句话总结这一阶段学到的: **Git 是内容寻址的, 所以哈希一致才是最强的证据** ——
 推送后要把远端 tree 的每个 blob SHA 跟本地 `git ls-tree` 逐个对上, 光看命令没报错不算数。
