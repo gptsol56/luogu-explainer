@@ -1,0 +1,286 @@
+[
+ {
+  "repo": "obra/superpowers",
+  "skill": "systematic-debugging",
+  "bytes": 9506,
+  "domains": [],
+  "shell": [],
+  "desc": "Use when encountering any bug, test failure, or unexpected behavior, before proposing fixe"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "test-driven-development",
+  "bytes": 9556,
+  "domains": [],
+  "shell": [],
+  "desc": "Use when implementing any feature or bugfix, before writing implementation code"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "verification-before-completion",
+  "bytes": 3598,
+  "domains": [],
+  "shell": [],
+  "desc": "Use when about to claim work is complete, fixed, or passing, before committing or creating"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "writing-plans",
+  "bytes": 10317,
+  "domains": [],
+  "shell": [],
+  "desc": "Use when you have a spec or requirements for a multi-step task, before touching code"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "brainstorming",
+  "bytes": 15190,
+  "domains": [],
+  "shell": [],
+  "desc": "\"You MUST use this before any creative work - creating features, building components, addi"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "using-git-worktrees",
+  "bytes": 6803,
+  "domains": [],
+  "shell": [
+   "npm install",
+   "pip install"
+  ],
+  "desc": "Use when starting feature work that needs isolation from current workspace or before execu"
+ },
+ {
+  "repo": "obra/superpowers",
+  "skill": "requesting-code-review",
+  "bytes": 2970,
+  "domains": [],
+  "shell": [],
+  "desc": "Use when completing tasks, implementing major features, or before merging to verify work m"
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "context-engineering",
+  "bytes": 14964,
+  "domains": [],
+  "shell": [],
+  "desc": "Optimizes agent context setup. Use when starting a new session, when agent output quality "
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "code-review-and-quality",
+  "bytes": 21570,
+  "domains": [],
+  "shell": [],
+  "desc": "Conducts multi-axis code review. Use before merging any change. Use when reviewing code wr"
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "spec-driven-development",
+  "bytes": 16869,
+  "domains": [],
+  "shell": [],
+  "desc": "Creates specs before coding. Use when starting a new project, feature, or significant chan"
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "planning-and-task-breakdown",
+  "bytes": 10593,
+  "domains": [],
+  "shell": [],
+  "desc": "Breaks work into ordered tasks. Use when you have a spec or clear requirements and need to"
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "debugging-and-error-recovery",
+  "bytes": 10801,
+  "domains": [],
+  "shell": [
+   "npm install"
+  ],
+  "desc": "Guides systematic root-cause debugging. Use when tests fail, builds break, something that "
+ },
+ {
+  "repo": "addyosmani/agent-skills",
+  "skill": "performance-optimization",
+  "bytes": 16602,
+  "domains": [],
+  "shell": [],
+  "desc": "Optimizes application performance across frontend, backend, queries, and databases. Use wh"
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "diagnosing-bugs",
+  "bytes": 8661,
+  "domains": [],
+  "shell": [
+   "curl"
+  ],
+  "desc": "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose"
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "domain-modeling",
+  "bytes": 3222,
+  "domains": [],
+  "shell": [],
+  "desc": "Build and sharpen a project's domain model. Use when discussing codebase terminology, writ"
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "implement-spec",
+  "bytes": 2835,
+  "domains": [],
+  "shell": [],
+  "desc": "\"Implement the result of /to-spec and /to-tickets in code.\""
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "code-review",
+  "bytes": 6691,
+  "domains": [],
+  "shell": [],
+  "desc": "\"Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axe"
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "writing-for-agents",
+  "bytes": 10882,
+  "domains": [],
+  "shell": [],
+  "desc": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md "
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "handoff",
+  "bytes": 940,
+  "domains": [],
+  "shell": [],
+  "desc": "Compact the current conversation into a handoff document for another agent to pick up."
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "tdd",
+  "bytes": 3621,
+  "domains": [],
+  "shell": [],
+  "desc": "Test-driven development. Use when the user wants to build features or fix bugs test-first,"
+ },
+ {
+  "repo": "mattpocock/skills",
+  "skill": "research",
+  "bytes": 832,
+  "domains": [],
+  "shell": [],
+  "desc": "Investigate a question against high-trust primary sources and capture the findings as a Ma"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "context-budget",
+  "bytes": 6213,
+  "domains": [
+   "code.claude.com/docs",
+   "developers.openai.com/codex"
+  ],
+  "shell": [],
+  "desc": "Routes live context checks to the native Codex or Claude Code meter without scanning files"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "token-budget-advisor",
+  "bytes": 5681,
+  "domains": [
+   "github.com/xabilimon"
+  ],
+  "shell": [],
+  "desc": "Offer a choice of response depth (25%/50%/75%/100%) with token estimates before answering,"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "prompt-caching-strategy",
+  "bytes": 10109,
+  "domains": [
+   "ai.google.dev/gemini",
+   "developers.openai.com/api",
+   "platform.claude.com/docs"
+  ],
+  "shell": [],
+  "desc": ">-"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "mcp-server-patterns",
+  "bytes": 4182,
+  "domains": [
+   "modelcontextprotocol.io"
+  ],
+  "shell": [
+   "npm install"
+  ],
+  "desc": "Build MCP servers with Node/TypeScript SDK — tools, resources, prompts, Zod validation, st"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "strategic-compact",
+  "bytes": 9725,
+  "domains": [
+   "x.com/affaanmustafa"
+  ],
+  "shell": [],
+  "desc": "Suggests manual context compaction at logical intervals to preserve context through task p"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "agent-harness-construction",
+  "bytes": 3438,
+  "domains": [
+   "github.com/affaan"
+  ],
+  "shell": [],
+  "desc": "Design and optimize AI agent action spaces, tool definitions, and observation formatting f"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "verification-loop",
+  "bytes": 3968,
+  "domains": [],
+  "shell": [],
+  "desc": "Run a six-phase verification of a Claude Code session's work — build, type check, lint, te"
+ },
+ {
+  "repo": "affaan-m/ECC",
+  "skill": "safety-guard",
+  "bytes": 2531,
+  "domains": [
+   "code.claude.com/docs"
+  ],
+  "shell": [
+   "rm -rf"
+  ],
+  "desc": "\"Guard against destructive operations with three modes: Careful intercepts dangerous comma"
+ },
+ {
+  "repo": "pbakaus/impeccable",
+  "skill": "impeccable",
+  "bytes": 46,
+  "domains": [],
+  "shell": [],
+  "desc": "fixture"
+ },
+ {
+  "repo": "pbakaus/impeccable",
+  "skill": "audit",
+  "bytes": 73,
+  "domains": [],
+  "shell": [],
+  "desc": "a user-authored audit skill"
+ },
+ {
+  "repo": "tt-a1i/archify",
+  "skill": "archify",
+  "bytes": 25331,
+  "domains": [],
+  "shell": [],
+  "desc": "\"Create validated architecture, workflow, sequence, data-flow, lifecycle/state, ERD, class"
+ }
+]

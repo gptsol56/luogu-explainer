@@ -1,0 +1,581 @@
+粘贴的记录
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\CHATGPT> cd
+PS C:\Users\CHATGPT> cd "D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git"
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git config
+error: no action specified
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git init
+Reinitialized existing Git repository in D:/新建文件夹/淳阳项目组/第一阶段 GIT and agent/git/.git/
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> echo "我们是冠军!">>readme.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git config
+error: no action specified
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> $ git config --local user.name "Chunyang Study"
+$ : 无法将“$”项识别为 cmdlet、函数、脚本文件或可运行程序的名称。请检查名称的拼写，如
+果包括路径，请确保路径正确，然后再试一次。
+所在位置 行:1 字符: 1
++ $ git config --local user.name "Chunyang Study"
++ ~
+    + CategoryInfo          : ObjectNotFound: ($:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git config --local user.email "chunyang.study@example.com"
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git config --show-origin user.name
+file:C:/Users/CHATGPT/.gitconfig        gptsol56
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git remote add origin https://github.com/gptsol56/git-test
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git remote -v
+origin  https://github.com/gptsol56/git-test (fetch)
+origin  https://github.com/gptsol56/git-test (push)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git add readme.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git commit -m "a very first edition"
+[main (root-commit) 305aa66] a very first edition
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 readme.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> touch 1.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> echo "token:114514">>1.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git status --short
+?? .gitgnore
+?? 1.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git branch
+* main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git branch dev
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git checkout main
+Already on 'main'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git switch dev
+Switched to branch 'dev'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git config --local user.name
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> touch 2.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git switch main
+Switched to branch 'main'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git merge 2.txt
+merge: 2.txt - not something we can merge
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git merge dev
+Already up to date.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git diff
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git branch www.com.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git checkout www.com.md
+Switched to branch 'www.com.md'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> touch rwww.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git add rwww.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git commit rwww.md
+hint: Waiting for your editor to close the file...
+
+
+
+[www.com.md 0d18117] add rwww.md.file Please enter the commit message for your changes. Lines starting
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 rwww.md
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git add .
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git commit -m "add gitignore and txt files"
+[www.com.md f082ec2] add gitignore and txt files
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 .gitgnore
+ create mode 100644 1.txt
+ create mode 100644 2.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git remote add origin https://github.com/gptsol56/git-test
+error: remote origin already exists.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git push -u origin main
+To https://github.com/gptsol56/git-test
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/gptsol56/git-test'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git pull origin main
+remote: Enumerating objects: 3, done.
+remote: Counting objects: 100% (3/3), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 3 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (3/3), 1.43 KiB | 488.00 KiB/s, done.
+From https://github.com/gptsol56/git-test
+ * branch            main       -> FETCH_HEAD
+ * [new branch]      main       -> origin/main
+fatal: refusing to merge unrelated histories
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git push -u origin main
+To https://github.com/gptsol56/git-test
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/gptsol56/git-test'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git status
+On branch www.com.md
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git switch main
+Switched to branch 'main'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git status
+On branch main
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git push -u origin main force
+error: src refspec force does not match any
+error: failed to push some refs to 'https://github.com/gptsol56/git-test'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git push -u origin main --force
+Enumerating objects: 3, done.
+Counting objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 254 bytes | 254.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/gptsol56/git-test
+ + 990957a...305aa66 main -> main (forced update)
+branch 'main' set up to track 'origin/main'.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git log --oneline
+305aa66 (HEAD -> main, origin/main, dev) a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git clone git @github.com:gpt56sol/git-test.git
+所在位置 行:1 字符: 15
++ git clone git @github.com:gpt56sol/git-test.git
++               ~~~~~~~
+无法使用展开运算符“@”以在表达式中引用变量。只能将“@github”作为命令的参数。要在表达式中引用变量，请使用“$github”。
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : SplattingNotPermitted
+
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git clone "git@github.com:gitsol56/git-test.git"
+Cloning into 'git-test'...
+ssh: connect to host github.com port 22: Connection refused
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git clone https://github.com/gptso156/git-test.git
+Cloning into 'git-test'...
+remote: Repository not found.
+fatal: repository 'https://github.com/gptso156/git-test.git/' not found
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git clone https://ghfast.top/https://github.com/gptso156/git-test.git
+Cloning into 'git-test'...
+remote: Invalid username or token. Password authentication is not supported for Git operations.
+fatal: Authentication failed for 'https://ghfast.top/https://github.com/gptso156/git-test.git/'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> git clone https://github.com/gptsol56/git-test.git
+Cloning into 'git-test'...
+remote: Enumerating objects: 3, done.
+remote: Counting objects: 100% (3/3), done.
+remote: Total 3 (delta 0), reused 3 (delta 0), pack-reused 0 (from 0)
+Receiving objects: 100% (3/3), done.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git> cd git-test
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git lopg -oneline
+git: 'lopg' is not a git command. See 'git --help'.
+
+The most similar command is
+        log
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline
+305aa66 (HEAD -> main, origin/main, origin/HEAD) a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git remote -v
+origin  https://github.com/gptsol56/git-test.git (fetch)
+origin  https://github.com/gptsol56/git-test.git (push)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "hello,git">>note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        note.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add
+Nothing specified, nothing added.
+hint: Maybe you wanted to say 'git add .'?
+hint: Disable this message with "git config set advice.addEmptyPathspec false"
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git diff
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git echo "add vigor to life">>note.txt
+git: 'echo' is not a git command. See 'git --help'.
+
+The most similar command is
+        fetch
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "add vigor to life">>note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git diff
+diff --git a/note.txt b/note.txt
+index 637a1fb..3cd4911 100644
+Binary files a/note.txt and b/note.txt differ
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> Get-Content note.txt -Encoding Unicode
+hello,git
+add vigor to life
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "add vigor to life" | Out-File note.txt -Append -Encoding utf8
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "ADD NOTE FILES"
+[main dd6f68d] ADD NOTE FILES
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push
+Enumerating objects: 4, done.
+Counting objects: 100% (4/4), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 365 bytes | 365.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/gptsol56/git-test.git
+   305aa66..dd6f68d  main -> main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git pull
+Already up to date.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch dev
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> touch sys.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch main
+Already on 'main'
+Your branch is up to date with 'origin/main'.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> touch ws.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "main draft" | Out-File ws.txt -Encoding utf8
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add ws.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git restore --staged ws.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git restore ws.txt
+error: pathspec 'ws.txt' did not match any file(s) known to git
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git restore note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        sys.txt
+        ws.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add ws.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "ws.txt"
+[main aa94c96] ws.txt
+ 1 file changed, 1 insertion(+)
+ create mode 100644 ws.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        sys.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add .
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "track untracked files"
+[main b355f21] track untracked files
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 sys.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch dev
+fatal: a branch named 'dev' already exists
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git wswitch dev
+git: 'wswitch' is not a git command. See 'git --help'.
+
+The most similar command is
+        switch
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch dev
+Switched to branch 'dev'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "dev feature" | Out-File sys.txt -Encoding utf8
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add sys.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "add sys.txt on dev"
+[dev 52e92ae] add sys.txt on dev
+ 1 file changed, 1 insertion(+)
+ create mode 100644 sys.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch main
+Switched to branch 'main'
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git merge dev
+Auto-merging sys.txt
+Merge made by the 'ort' strategy.
+ sys.txt | 1 +
+ 1 file changed, 1 insertion(+)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph --decorate
+*   d02bc39 (HEAD -> main) haodeMerge branch 'dev'
+|\
+| * 52e92ae (dev) add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d (origin/main, origin/HEAD) ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push
+Enumerating objects: 12, done.
+Counting objects: 100% (12/12), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (11/11), 940 bytes | 940.00 KiB/s, done.
+Total 11 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (4/4), done.
+To https://github.com/gptsol56/git-test.git
+   dd6f68d..d02bc39  main -> main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch -c feature-x
+Switched to a new branch 'feature-x'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "feature work"|Out-File main.txt -Encoing utf8
+Out-File : 找不到与参数名称“Encoing”匹配的参数。
+所在位置 行:1 字符: 39
++ echo "feature work"|Out-File main.txt -Encoing utf8
++                                       ~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Out-File]，ParameterBindingException
+    + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Commands.OutFileCommand
+
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "feature work"|Out-File main.txt -Encoding utf8
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add fx.txt
+fatal: pathspec 'fx.txt' did not match any files
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> touch fx.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add fx.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "feature work"
+[feature-x ad39603] feature work
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 fx.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch main
+Switched to branch 'main'
+Your branch is up to date with 'origin/main'.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "main moved on" | Out-File main.txt -Encoding utf8
+
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> touch main.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "main update"
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        main.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add .
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "track untracked files"
+[main 9c0b13c] track untracked files
+ 1 file changed, 1 insertion(+)
+ create mode 100644 main.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test>  git commit -m "main update"
+On branch main
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch feature-x
+Switched to branch 'feature-x'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git rebase main
+Successfully rebased and updated refs/heads/feature-x.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git switch main
+Switched to branch 'main'
+Your branch is ahead of 'origin/main' by 1 commit.
+  (use "git push" to publish your local commits)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git merge feature-x
+Updating 9c0b13c..f80bb88
+Fast-forward
+ fx.txt | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 fx.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph
+* f80bb88 (HEAD -> main, feature-x) feature work
+* 9c0b13c track untracked files
+*   d02bc39 (origin/main, origin/HEAD) haodeMerge branch 'dev'
+|\
+| * 52e92ae (dev) add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph
+* f80bb88 (HEAD -> main, feature-x) feature work
+* 9c0b13c track untracked files
+*   d02bc39 (origin/main, origin/HEAD) haodeMerge branch 'dev'
+|\
+| * 52e92ae (dev) add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (6/6), 620 bytes | 620.00 KiB/s, done.
+Total 6 (delta 1), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (1/1), done.
+To https://github.com/gptsol56/git-test.git
+   d02bc39..f80bb88  main -> main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch -d feature-x
+Deleted branch feature-x (was f80bb88).
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch -d
+fatal: branch name required
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch -a
+  dev
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git long --online --graph
+git: 'long' is not a git command. See 'git --help'.
+
+The most similar commands are
+        clone
+        log
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph
+* f80bb88 (HEAD -> main, origin/main, origin/HEAD) feature work
+* 9c0b13c track untracked files
+*   d02bc39 haodeMerge branch 'dev'
+|\
+| * 52e92ae (dev) add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch -d dev
+Deleted branch dev (was 52e92ae).
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph
+* f80bb88 (HEAD -> main, origin/main, origin/HEAD) feature work
+* 9c0b13c track untracked files
+*   d02bc39 haodeMerge branch 'dev'
+|\
+| * 52e92ae add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push origin -delete dev
+error: did you mean `--delete` (with two dashes)?
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push origin --delete dev
+error: unable to delete 'dev': remote ref does not exist
+error: failed to push some refs to 'https://github.com/gptsol56/git-test.git'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push origin --delete dev
+error: unable to delete 'dev': remote ref does not exist
+error: failed to push some refs to 'https://github.com/gptsol56/git-test.git'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push origin --delete dev
+error: unable to delete 'dev': remote ref does not exist
+error: failed to push some refs to 'https://github.com/gptsol56/git-test.git'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git fetch --prune
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git branch -a
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph
+* f80bb88 (HEAD -> main, origin/main, origin/HEAD) feature work
+* 9c0b13c track untracked files
+*   d02bc39 haodeMerge branch 'dev'
+|\
+| * 52e92ae add sys.txt on dev
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> echo "bad change" | Out-File bad.txt -Encoding utf8
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add bad.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit -m "bad commit"
+[main 28efc47] bad commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 bad.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline -3          # 记下 bad commit 的哈希
+28efc47 (HEAD -> main) bad commit
+f80bb88 (origin/main, origin/HEAD) feature work
+9c0b13c track untracked files
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git reset --soft HEAD~1
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        new file:   bad.txt
+
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git reset HEAD~1
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        bad.txt
+        fx.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git reset --hard HEAD~1
+HEAD is now at d02bc39 haodeMerge branch 'dev'
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is behind 'origin/main' by 2 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        bad.txt
+        fx.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add bad.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git add fx.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git reset --hard HEAD~1
+HEAD is now at b355f21 track untracked files
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status
+On branch main
+Your branch is behind 'origin/main' by 4 commits, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline -5 dd6f68d
+dd6f68d ADD NOTE FILES
+305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git revert dd6f68d
+[main 16e606c] AK AL AG AGE Revert "ADD NOTE FILES"
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 note.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push
+To https://github.com/gptsol56/git-test.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/gptsol56/git-test.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git commit
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 1 and 4 different commits each, respectively.
+
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push
+To https://github.com/gptsol56/git-test.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/gptsol56/git-test.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git pull
+Merge made by the 'ort' strategy.
+ fx.txt   | 0
+ main.txt | 1 +
+ sys.txt  | 1 +
+ 3 files changed, 2 insertions(+)
+ create mode 100644 fx.txt
+ create mode 100644 main.txt
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push
+Enumerating objects: 6, done.
+Counting objects: 100% (6/6), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 574 bytes | 574.00 KiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (2/2), completed with 1 local object.
+To https://github.com/gptsol56/git-test.git
+   f80bb88..5f2c2dc  main -> main
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git log --oneline --graph --decorate --all   # 总览所有分支和提交
+*   5f2c2dc (HEAD -> main, origin/main, origin/HEAD) akkk Merge branch 'main' of https://github.com/gptsol56/git-test
+|\
+| * f80bb88 feature work
+| * 9c0b13c track untracked files
+| *   d02bc39 haodeMerge branch 'dev'
+| |\
+| | * 52e92ae add sys.txt on dev
+* | | 16e606c AK AL AG AGE Revert "ADD NOTE FILES"
+|/ /
+* | b355f21 track untracked files
+* | aa94c96 ws.txt
+|/
+* dd6f68d ADD NOTE FILES
+* 305aa66 a very first edition
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git status                                    # 工作区干净
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test> git push                                      # 与远程同步
+Everything up-to-date
+PS D:\新建文件夹\淳阳项目组\第一阶段 GIT and agent\git\git-test>
